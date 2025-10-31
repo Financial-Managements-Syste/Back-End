@@ -20,23 +20,27 @@ CREATE TABLE Categories (
 
 
 
+
 CREATE TABLE Transactions (
-    transaction_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id NUMBER NOT NULL,
-    category_id NUMBER NOT NULL,
-    amount NUMBER(10,2) NOT NULL,
+    transaction_id NUMBER PRIMARY KEY,                
+    user_id        NUMBER NOT NULL,
+    category_id    NUMBER NOT NULL,
+    amount         NUMBER(10,2) NOT NULL,
     transaction_type VARCHAR2(20) NOT NULL,
     transaction_date DATE NOT NULL,
-    description VARCHAR2(255),
-    payment_method VARCHAR2(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    description    VARCHAR2(255),
+    payment_method VARCHAR2(255),                      
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_synced      NUMBER DEFAULT 0,                  
+
     CONSTRAINT fk_trans_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_trans_category FOREIGN KEY (category_id) REFERENCES Categories(category_id),
     CONSTRAINT chk_trans_type CHECK (transaction_type IN ('Income', 'Expense')),
     CONSTRAINT chk_trans_amount CHECK (amount > 0)
 );
 
+DROP TABLE Transactions;
 
 CREATE TABLE Budgets (
     budget_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -93,30 +97,33 @@ CREATE INDEX idx_savings_user ON SavingsGoals(user_id);
 
 
 
+INSERT INTO Transactions (transaction_id, user_id, category_id, amount, transaction_type, transaction_date, description, payment_method)
+VALUES 
+ (1, 1, 2, 5000.00, 'Income', TO_DATE('2025-10-01', 'YYYY-MM-DD'), 'October Salary', 'Bank Transfer');
 
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Salary', 'Income', 'Monthly salary');
+INSERT INTO Transactions (transaction_id, user_id, category_id, amount, transaction_type, transaction_date, description, payment_method)
+VALUES 
+ (2, 1, 3, 150.50, 'Expense', TO_DATE('2025-10-02', 'YYYY-MM-DD'), 'Weekly groceries', 'Credit Card');
 
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Freelance', 'Income', 'Freelance income');
+INSERT INTO Transactions (transaction_id, user_id, category_id, amount, transaction_type, transaction_date, description, payment_method)
+VALUES 
+ (3, 1, 4, 45.00, 'Expense', TO_DATE('2025-10-03', 'YYYY-MM-DD'), 'Uber rides', 'Debit Card');
 
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Groceries', 'Expense', 'Food and groceries');
+INSERT INTO Transactions (transaction_id, user_id, category_id, amount, transaction_type, transaction_date, description, payment_method)
+VALUES 
+ (4, 1, 8, 1200.00, 'Expense', TO_DATE('2025-10-01', 'YYYY-MM-DD'), 'Monthly rent', 'Bank Transfer');
 
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Transport', 'Expense', 'Transportation costs');
+INSERT INTO Transactions (transaction_id, user_id, category_id, amount, transaction_type, transaction_date, description, payment_method)
+VALUES 
+ (5, 2, 2, 4500.00, 'Income', TO_DATE('2025-10-01', 'YYYY-MM-DD'), 'October Salary', 'Bank Transfer');
 
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Utilities', 'Expense', 'Electricity, water, internet');
+INSERT INTO Transactions (transaction_id, user_id, category_id, amount, transaction_type, transaction_date, description, payment_method)
+VALUES 
+ (6, 2, 3, 200.00, 'Expense', TO_DATE('2025-10-02', 'YYYY-MM-DD'), 'Grocery shopping', 'Cash');
 
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Entertainment', 'Expense', 'Movies, games, subscriptions');
-
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Healthcare', 'Expense', 'Medical expenses');
-
-INSERT INTO Categories (category_name, category_type, description) VALUES
-('Rent', 'Expense', 'Monthly rent');
+INSERT INTO Transactions (transaction_id, user_id, category_id, amount, transaction_type, transaction_date, description, payment_method)
+VALUES 
+ (7, 2, 6, 50.00, 'Expense', TO_DATE('2025-10-03', 'YYYY-MM-DD'), 'Netflix subscription', 'Credit Card');
 
 
 
@@ -141,3 +148,4 @@ VALUES (1, 1, 5000.00, 'Income', TO_DATE('2025-10-01', 'YYYY-MM-DD'), 'October S
 INSERT INTO SyncMetadata (user_id, table_name, last_sync_timestamp, records_synced, sync_status)
 VALUES (1, 'Transactions', CURRENT_TIMESTAMP, 1, 'Success');
 
+SELECT COUNT(*) FROM Transactions;
