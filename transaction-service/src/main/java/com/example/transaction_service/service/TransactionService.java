@@ -1,7 +1,7 @@
 package com.example.transaction_service.service;
 
-import com.example.transaction_service.entity.Transaction;
-import com.example.transaction_service.repository.TransactionRepository;
+import com.example.transaction_service.entity.sqlite.SQLiteTransaction;
+import com.example.transaction_service.repository.sqlite.SQLiteTransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,36 +12,36 @@ import java.util.Optional;
 public class TransactionService {
 
     @Autowired
-    private TransactionRepository transactionRepository;
+    private SQLiteTransactionRepository SQLiteTransactionRepository;
 
     //  Create Transaction
-    public Transaction createTransaction(Transaction transaction) {
-        return transactionRepository.save(transaction);
+    public SQLiteTransaction createTransaction(SQLiteTransaction transaction) {
+        return SQLiteTransactionRepository.save(transaction);
     }
 
     // Get all Transactions
-    public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
+    public List<SQLiteTransaction> getAllTransactions() {
+        return SQLiteTransactionRepository.findAll();
     }
 
     //  Get Transaction by ID
-    public Optional<Transaction> getTransactionById(int id) {
-        return transactionRepository.findById(id);
+    public Optional<SQLiteTransaction> getTransactionById(int id) {
+        return SQLiteTransactionRepository.findById(id);
     }
 
     //  Get Transactions by User
-    public List<Transaction> getTransactionsByUserId(int userId) {
-        return transactionRepository.findByUserId(userId);
+    public List<SQLiteTransaction> getTransactionsByUserId(int userId) {
+        return SQLiteTransactionRepository.findByUserId(userId);
     }
 
     // 🗂 Get Transactions by Category
-    public List<Transaction> getTransactionsByCategoryId(int categoryId) {
-        return transactionRepository.findByCategoryId(categoryId);
+    public List<SQLiteTransaction> getTransactionsByCategoryId(int categoryId) {
+        return SQLiteTransactionRepository.findByCategoryId(categoryId);
     }
 
     //  Update Transaction
-    public Transaction updateTransaction(int id, Transaction updatedTransaction) {
-        return transactionRepository.findById(id).map(transaction -> {
+    public SQLiteTransaction updateTransaction(int id, SQLiteTransaction updatedTransaction) {
+        return SQLiteTransactionRepository.findById(id).map(transaction -> {
             transaction.setUserId(updatedTransaction.getUserId());
             transaction.setCategoryId(updatedTransaction.getCategoryId());
             transaction.setAmount(updatedTransaction.getAmount());
@@ -49,14 +49,14 @@ public class TransactionService {
             transaction.setTransactionDate(updatedTransaction.getTransactionDate());
             transaction.setDescription(updatedTransaction.getDescription());
             transaction.setPaymentMethod(updatedTransaction.getPaymentMethod());
-            return transactionRepository.save(transaction);
+            return SQLiteTransactionRepository.save(transaction);
         }).orElseThrow(() -> new RuntimeException("Transaction not found with ID " + id));
     }
 
 
     //  Delete Transaction
     public void deleteTransaction(int id) {
-        transactionRepository.deleteById(id);
+        SQLiteTransactionRepository.deleteById(id);
     }
 }
 

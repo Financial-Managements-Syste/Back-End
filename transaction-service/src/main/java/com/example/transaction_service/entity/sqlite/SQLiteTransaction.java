@@ -1,13 +1,14 @@
-package com.example.transaction_service.entity;
+package com.example.transaction_service.entity.sqlite;
 
 import javax.persistence.*;
 
 @Entity
 @Table(name = "Transactions")
-public class Transaction {
+public class SQLiteTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "transaction_id")
     private int transactionId; // ✅ renamed from transaction_id
 
     @Column(name = "user_id")
@@ -31,7 +32,7 @@ public class Transaction {
     @Column(name = "payment_method")
     private String paymentMethod; // ✅ renamed from payment_method
 
-    public Transaction() {
+    public SQLiteTransaction() {
     }
 
     // --- Getters & Setters ---
