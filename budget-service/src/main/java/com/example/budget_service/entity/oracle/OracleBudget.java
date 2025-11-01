@@ -1,11 +1,12 @@
-package com.example.budget_service.entity;
+package com.example.budget_service.entity.oracle;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Budgets")
-public class Budget {
+public class OracleBudget {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,17 +32,18 @@ public class Budget {
     private String budgetPeriod;
 
     @Column(name = "start_date", nullable = false)
-    @Convert(converter = LocalDateConverter.class)
     private LocalDate startDate;
 
     @Column(name = "end_date", nullable = false)
-    @Convert(converter = LocalDateConverter.class)
     private LocalDate endDate;
 
-    @Column(name = "is_synced", columnDefinition = "INTEGER DEFAULT 0")
-    private Integer isSynced;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    // Getters and Setters
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // --- Getters & Setters ---
     public Long getBudgetId() { return budgetId; }
     public void setBudgetId(Long budgetId) { this.budgetId = budgetId; }
 
@@ -69,6 +71,11 @@ public class Budget {
     public LocalDate getEndDate() { return endDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
 
-    public Integer getIsSynced() { return isSynced; }
-    public void setIsSynced(Integer isSynced) { this.isSynced = isSynced; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+
 }

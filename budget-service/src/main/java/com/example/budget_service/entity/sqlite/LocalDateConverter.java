@@ -1,4 +1,4 @@
-package com.example.budget_service.entity;
+package com.example.budget_service.entity.sqlite;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;

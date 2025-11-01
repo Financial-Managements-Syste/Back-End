@@ -1,7 +1,7 @@
 package com.example.budget_service.service;
 
-import com.example.budget_service.entity.Budget;
-import com.example.budget_service.repository.BudgetRepository;
+import com.example.budget_service.entity.sqlite.SQLiteBudget;
+import com.example.budget_service.repository.sqlite.SQLiteBudgetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,50 +12,51 @@ import java.util.Optional;
 public class BudgetService {
 
     @Autowired
-    private BudgetRepository budgetRepository;
+    private SQLiteBudgetRepository sqliteBudgetRepository;
 
     // CREATE
-    public Budget createBudget(Budget budget) {
-        return budgetRepository.save(budget);
+    public SQLiteBudget createBudget(SQLiteBudget budget) {
+        return sqliteBudgetRepository.save(budget);
     }
 
     // READ - all
-    public List<Budget> getAllBudgets() {
-        return budgetRepository.findAll();
+    public List<SQLiteBudget> getAllBudgets() {
+        return sqliteBudgetRepository.findAll();
     }
 
     // READ - by ID
-    public Optional<Budget> getBudgetById(Long id) {
-        return budgetRepository.findById(id);
+    public Optional<SQLiteBudget> getBudgetById(int id) {
+        return sqliteBudgetRepository.findById(id);
     }
 
     // UPDATE
-    public Budget updateBudget(Long id, Budget updatedBudget) {
-        return budgetRepository.findById(id)
+    public SQLiteBudget updateBudget(int id, SQLiteBudget updatedBudget) {
+        return sqliteBudgetRepository.findById(id)
                 .map(existing -> {
                     existing.setUserId(updatedBudget.getUserId());
                     existing.setCategoryId(updatedBudget.getCategoryId());
-                    existing.setBudgetName(updatedBudget.getBudgetName());           // updated field
-                    existing.setBudgetDescription(updatedBudget.getBudgetDescription()); // updated field
+                    existing.setBudgetName(updatedBudget.getBudgetName());
+                    existing.setBudgetDescription(updatedBudget.getBudgetDescription());
                     existing.setBudgetAmount(updatedBudget.getBudgetAmount());
                     existing.setBudgetPeriod(updatedBudget.getBudgetPeriod());
                     existing.setStartDate(updatedBudget.getStartDate());
                     existing.setEndDate(updatedBudget.getEndDate());
                     existing.setIsSynced(updatedBudget.getIsSynced());
-                    return budgetRepository.save(existing);
+                    return sqliteBudgetRepository.save(existing);
                 })
                 .orElseThrow(() -> new RuntimeException("Budget not found with ID: " + id));
     }
 
-    public List<Budget> getBudgetsByUserId(Long userId) {
-        return budgetRepository.findByUserId(userId);
+    // READ - by User ID
+    public List<SQLiteBudget> getBudgetsByUserId(int userId) {
+        return sqliteBudgetRepository.findByUserId(userId);
     }
 
     // DELETE
-    public void deleteBudget(Long id) {
-        if (!budgetRepository.existsById(id)) {
+    public void deleteBudget(int id) {
+        if (!sqliteBudgetRepository.existsById(id)) {
             throw new RuntimeException("Budget not found with ID: " + id);
         }
-        budgetRepository.deleteById(id);
+        sqliteBudgetRepository.deleteById(id);
     }
 }

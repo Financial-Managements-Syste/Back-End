@@ -1,6 +1,6 @@
 package com.example.budget_service.controller;
 
-import com.example.budget_service.entity.Budget;
+import com.example.budget_service.entity.sqlite.SQLiteBudget;
 import com.example.budget_service.service.BudgetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,25 +18,26 @@ public class BudgetController {
 
     // CREATE
     @PostMapping
-    public ResponseEntity<Budget> createBudget(@RequestBody Budget budget) {
-        Budget saved = budgetService.createBudget(budget);
+    public ResponseEntity<SQLiteBudget> createBudget(@RequestBody SQLiteBudget budget) {
+        SQLiteBudget saved = budgetService.createBudget(budget);
         return ResponseEntity.ok(saved);
     }
 
     // READ - All
     @GetMapping
-    public ResponseEntity<List<Budget>> getAllBudgets() {
+    public ResponseEntity<List<SQLiteBudget>> getAllBudgets() {
         return ResponseEntity.ok(budgetService.getAllBudgets());
     }
 
+    // READ - By User
     @GetMapping(params = "user_id")
-    public ResponseEntity<List<Budget>> getBudgetsByUser(@RequestParam("user_id") Long userId) {
+    public ResponseEntity<List<SQLiteBudget>> getBudgetsByUser(@RequestParam("user_id") int userId) {
         return ResponseEntity.ok(budgetService.getBudgetsByUserId(userId));
     }
 
-    // READ - One
+    // READ - One by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Budget> getBudgetById(@PathVariable Long id) {
+    public ResponseEntity<SQLiteBudget> getBudgetById(@PathVariable int id) {
         return budgetService.getBudgetById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -44,13 +45,14 @@ public class BudgetController {
 
     // UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<Budget> updateBudget(@PathVariable Long id, @RequestBody Budget budget) {
-        return ResponseEntity.ok(budgetService.updateBudget(id, budget));
+    public ResponseEntity<SQLiteBudget> updateBudget(@PathVariable int id, @RequestBody SQLiteBudget budget) {
+        SQLiteBudget updated = budgetService.updateBudget(id, budget);
+        return ResponseEntity.ok(updated);
     }
 
     // DELETE
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBudget(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBudget(@PathVariable int id) {
         budgetService.deleteBudget(id);
         return ResponseEntity.noContent().build();
     }
