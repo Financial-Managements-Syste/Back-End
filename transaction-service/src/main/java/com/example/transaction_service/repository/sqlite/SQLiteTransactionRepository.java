@@ -8,6 +8,8 @@ import java.util.List;
 
 @Repository
 public interface SQLiteTransactionRepository extends JpaRepository<SQLiteTransaction, Integer> {
-    List<SQLiteTransaction> findByUserId(int userId);
-    List<SQLiteTransaction> findByCategoryId(int categoryId);
+    List<SQLiteTransaction> findByUserId(Integer userId);
+    List<SQLiteTransaction> findByCategoryId(Integer categoryId);
+
+    List<SQLiteTransaction> findByIsSyncedFalse(); // ✅ for syncing only unsynced records
 }

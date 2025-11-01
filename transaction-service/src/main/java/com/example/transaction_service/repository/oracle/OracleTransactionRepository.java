@@ -10,4 +10,5 @@ import java.util.List;
 public interface OracleTransactionRepository extends JpaRepository<OracleTransaction, Long> {
     List<OracleTransaction> findByUserId(Long userId);
     List<OracleTransaction> findByCategoryId(Long categoryId);
+    boolean existsByTransactionId(Long transactionId); // ✅ useful for sync checks
 }

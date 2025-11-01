@@ -9,94 +9,60 @@ public class SQLiteTransaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "transaction_id")
-    private int transactionId; // ✅ renamed from transaction_id
+    private int transactionId;
 
     @Column(name = "user_id")
-    private int userId; // ✅ renamed from user_id
+    private int userId;
 
     @Column(name = "category_id")
-    private int categoryId; // ✅ renamed from category_id
+    private int categoryId;
 
     @Column(name = "amount")
     private double amount;
 
     @Column(name = "transaction_type")
-    private String transactionType; // ✅ renamed from transaction_type
+    private String transactionType;
 
     @Column(name = "transaction_date")
-    private String transactionDate; // ✅ renamed from transaction_date
+    private String transactionDate;
 
     @Column(name = "description")
     private String description;
 
     @Column(name = "payment_method")
-    private String paymentMethod; // ✅ renamed from payment_method
+    private String paymentMethod;
 
-    public SQLiteTransaction() {
-    }
+    // ✅ Add this for sync tracking
+    @Column(name = "is_synced")
+    private int isSynced = 0; // 0 = not synced, 1 = synced
+
+    public SQLiteTransaction() {}
 
     // --- Getters & Setters ---
-    public int getTransactionId() {
-        return transactionId;
-    }
+    public int getTransactionId() { return transactionId; }
+    public void setTransactionId(int transactionId) { this.transactionId = transactionId; }
 
-    public void setTransactionId(int transactionId) {
-        this.transactionId = transactionId;
-    }
+    public int getUserId() { return userId; }
+    public void setUserId(int userId) { this.userId = userId; }
 
-    public int getUserId() {
-        return userId;
-    }
+    public int getCategoryId() { return categoryId; }
+    public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
 
-    public void setUserId(int userId) {
-        this.userId = userId;
-    }
+    public double getAmount() { return amount; }
+    public void setAmount(double amount) { this.amount = amount; }
 
-    public int getCategoryId() {
-        return categoryId;
-    }
+    public String getTransactionType() { return transactionType; }
+    public void setTransactionType(String transactionType) { this.transactionType = transactionType; }
 
-    public void setCategoryId(int categoryId) {
-        this.categoryId = categoryId;
-    }
+    public String getTransactionDate() { return transactionDate; }
+    public void setTransactionDate(String transactionDate) { this.transactionDate = transactionDate; }
 
-    public double getAmount() {
-        return amount;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setAmount(double amount) {
-        this.amount = amount;
-    }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 
-    public String getTransactionType() {
-        return transactionType;
-    }
-
-    public void setTransactionType(String transactionType) {
-        this.transactionType = transactionType;
-    }
-
-    public String getTransactionDate() {
-        return transactionDate;
-    }
-
-    public void setTransactionDate(String transactionDate) {
-        this.transactionDate = transactionDate;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public void setPaymentMethod(String paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
+    public int getIsSynced() { return isSynced; }
+    public void setIsSynced(int isSynced) { this.isSynced = isSynced; }
 }

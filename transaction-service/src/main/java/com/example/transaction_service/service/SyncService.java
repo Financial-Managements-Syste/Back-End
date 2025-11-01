@@ -12,103 +12,133 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 @ConditionalOnProperty(name = "oracle.enabled", havingValue = "true")
 public class SyncService {
 
-    private static final Logger log = LoggerFactory.getLogger(SyncService.class);
+	private static final Logger log = LoggerFactory.getLogger(SyncService.class);
 
-    @Autowired
-    private SQLiteTransactionRepository sqliteRepo;
+	@Autowired
+	private SQLiteTransactionRepository sqliteRepo;
 
-    @Autowired
-    private OracleTransactionRepository oracleRepo;
+	@Autowired
+	private OracleTransactionRepository oracleRepo;
 
-    @Transactional(transactionManager = "oracleTransactionManager")
-    public void syncTransactions() {
-        // 1. Fetch all SQLite transactions
-        List<SQLiteTransaction> sqliteTransactions = sqliteRepo.findAll();
-		int inserted = 0;
-		int updated = 0;
-		int deleted = 0;
-		int failed = 0;
+	private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-		// Build a set of SQLite IDs for delete detection
-		java.util.Set<Long> sqliteIds = new java.util.HashSet<>();
-		for (SQLiteTransaction sqliteTx : sqliteTransactions) {
-			sqliteIds.add((long) sqliteTx.getTransactionId());
-			boolean exists = oracleRepo.existsById((long) sqliteTx.getTransactionId());
-			if (!exists) {
-				OracleTransaction oracleTx = new OracleTransaction();
-				oracleTx.setTransactionId((long) sqliteTx.getTransactionId());
-				oracleTx.setUserId((long) sqliteTx.getUserId());
-				oracleTx.setCategoryId((long) sqliteTx.getCategoryId());
-				oracleTx.setAmount(sqliteTx.getAmount());
-				oracleTx.setTransactionType(sqliteTx.getTransactionType());
-                try {
-					oracleTx.setTransactionDate(LocalDate.parse(sqliteTx.getTransactionDate()));
-				} catch (Exception e) {
-					oracleTx.setTransactionDate(LocalDate.now());
-				}
-				oracleTx.setDescription(sqliteTx.getDescription());
-				oracleTx.setPaymentMethod(sqliteTx.getPaymentMethod());
-				try {
-					oracleRepo.save(oracleTx);
+	@Transactional(transactionManager = "oracleTransactionManager")
+	public void syncTransactions() {
+		List<SQLiteTransaction> sqliteTransactions = sqliteRepo.findAll();
+		List<OracleTransaction> oracleTransactions = oracleRepo.findAll();
+
+		int inserted = 0, updated = 0, deleted = 0, failed = 0;
+
+		Map<String, OracleTransaction> oracleMap = new HashMap<>();
+		for (OracleTransaction ot : oracleTransactions) {
+			String key = generateKey(ot.getUserId(), ot.getCategoryId(), ot.getTransactionDate());
+			oracleMap.put(key, ot);
+		}
+
+		// --- INSERT / UPDATE ---
+		for (SQLiteTransaction st : sqliteTransactions) {
+			LocalDate txDate;
+			try {
+				txDate = LocalDate.parse(st.getTransactionDate(), formatter);
+			} catch (Exception e) {
+				txDate = LocalDate.now();
+			}
+
+			String key = generateKey((long) st.getUserId(), (long) st.getCategoryId(), txDate);
+			OracleTransaction ot = oracleMap.get(key);
+
+			try {
+				if (ot == null) {
+					// INSERT
+					OracleTransaction newTx = new OracleTransaction();
+					newTx.setUserId((long) st.getUserId());
+					newTx.setCategoryId((long) st.getCategoryId());
+					newTx.setAmount(st.getAmount());
+					newTx.setTransactionType(st.getTransactionType());
+					newTx.setTransactionDate(txDate);
+					newTx.setDescription(st.getDescription());
+					newTx.setPaymentMethod(st.getPaymentMethod());
+					newTx.setCreatedAt(LocalDateTime.now());
+					newTx.setUpdatedAt(LocalDateTime.now());
+					oracleRepo.save(newTx);
+
+					// mark as synced in SQLite
+					st.setIsSynced(1);
+					sqliteRepo.save(st);
 					inserted++;
-				} catch (Exception ex) {
-					failed++;
-					log.error("Failed to insert tx id={} into Oracle: {}", sqliteTx.getTransactionId(), ex.getMessage());
+				} else {
+					// UPDATE
+					boolean changed = false;
+					if (!ot.getAmount().equals(st.getAmount())) {
+						ot.setAmount(st.getAmount());
+						changed = true;
+					}
+					if (!ot.getTransactionType().equals(st.getTransactionType())) {
+						ot.setTransactionType(st.getTransactionType());
+						changed = true;
+					}
+					if (!Objects.equals(ot.getDescription(), st.getDescription())) {
+						ot.setDescription(st.getDescription());
+						changed = true;
+					}
+					if (!Objects.equals(ot.getPaymentMethod(), st.getPaymentMethod())) {
+						ot.setPaymentMethod(st.getPaymentMethod());
+						changed = true;
+					}
+
+					if (changed) {
+						ot.setUpdatedAt(LocalDateTime.now());
+						oracleRepo.save(ot);
+					}
+
+					// mark as synced in SQLite even if no change
+					st.setIsSynced(1);
+					sqliteRepo.save(st);
+					updated++;
 				}
-			} else {
-				// Update existing Oracle row to mirror SQLite
+			} catch (Exception ex) {
+				failed++;
+				log.error("Failed to sync SQLite tx={} to Oracle: {}", st.getTransactionId(), ex.getMessage());
+			}
+		}
+
+		// --- DELETE Oracle transactions not in SQLite ---
+		Set<String> sqliteKeys = new HashSet<>();
+		for (SQLiteTransaction st : sqliteTransactions) {
+			LocalDate txDate;
+			try {
+				txDate = LocalDate.parse(st.getTransactionDate(), formatter);
+			} catch (Exception e) {
+				txDate = LocalDate.now();
+			}
+			sqliteKeys.add(generateKey((long) st.getUserId(), (long) st.getCategoryId(), txDate));
+		}
+
+		for (OracleTransaction ot : oracleTransactions) {
+			String key = generateKey(ot.getUserId(), ot.getCategoryId(), ot.getTransactionDate());
+			if (!sqliteKeys.contains(key)) {
 				try {
-					OracleTransaction oracleExisting = oracleRepo.findById((long) sqliteTx.getTransactionId()).orElse(null);
-                    if (oracleExisting != null) {
-						oracleExisting.setUserId((long) sqliteTx.getUserId());
-						oracleExisting.setCategoryId((long) sqliteTx.getCategoryId());
-						oracleExisting.setAmount(sqliteTx.getAmount());
-						oracleExisting.setTransactionType(sqliteTx.getTransactionType());
-						try {
-							oracleExisting.setTransactionDate(LocalDate.parse(sqliteTx.getTransactionDate()));
-						} catch (Exception e) {
-							oracleExisting.setTransactionDate(LocalDate.now());
-						}
-						oracleExisting.setDescription(sqliteTx.getDescription());
-						oracleExisting.setPaymentMethod(sqliteTx.getPaymentMethod());
-                        // bump updated_at on update
-                        oracleExisting.setUpdatedAt(LocalDateTime.now());
-						oracleRepo.save(oracleExisting);
-						updated++;
-					}
-				} catch (Exception ex) {
+					oracleRepo.delete(ot);
+					deleted++;
+				} catch (Exception e) {
 					failed++;
-					log.error("Failed to update tx id={} in Oracle: {}", sqliteTx.getTransactionId(), ex.getMessage());
+					log.error("Failed to delete Oracle tx={} : {}", ot.getTransactionId(), e.getMessage());
 				}
 			}
 		}
 
-		// Delete Oracle rows that no longer exist in SQLite
-		try {
-			List<OracleTransaction> oracleAll = oracleRepo.findAll();
-			for (OracleTransaction ot : oracleAll) {
-				Long id = ot.getTransactionId();
-				if (!sqliteIds.contains(id)) {
-					try {
-						oracleRepo.deleteById(id);
-						deleted++;
-					} catch (Exception ex) {
-						failed++;
-						log.error("Failed to delete tx id={} from Oracle: {}", id, ex.getMessage());
-					}
-				}
-			}
-		} catch (Exception ex) {
-			log.error("Delete phase failed: {}", ex.getMessage());
-		}
+		log.info("Sync completed. Inserted: {}. Updated: {}. Deleted: {}. Failed: {}.", inserted, updated, deleted, failed);
+	}
 
-		log.info("Sync completed. SQLite: {}. Inserted: {}. Updated: {}. Deleted: {}. Failed ops: {}.", sqliteTransactions.size(), inserted, updated, deleted, failed);
-    }
+	private String generateKey(Long userId, Long categoryId, LocalDate date) {
+		return userId + "_" + categoryId + "_" + date.toString();
+	}
 }
