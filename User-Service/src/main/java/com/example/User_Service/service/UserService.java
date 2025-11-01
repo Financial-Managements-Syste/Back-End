@@ -1,7 +1,7 @@
 package com.example.User_Service.service;
 
-import com.example.User_Service.entity.User;
-import com.example.User_Service.repository.UserRepository;
+import com.example.User_Service.entity.sqlite.User;
+import com.example.User_Service.repository.sqlite.SQLiteUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     @Autowired
-    private UserRepository userRepository;
+    private SQLiteUserRepository SQLiteUserRepository;
 
     public User register(User user) {
         // Copy transient plain password to password_hash
@@ -22,11 +22,11 @@ public class UserService {
             user.setCreated_at(java.time.LocalDateTime.now().toString());
         }
 
-        return userRepository.save(user);
+        return SQLiteUserRepository.save(user);
     }
 
     public User login(String username, String password) {
-        User user = userRepository.findByUsername(username);
+        User user = SQLiteUserRepository.findByUsername(username);
         if (user != null && user.getPassword_hash().equals(password)) {
             return user;
         }

@@ -1,6 +1,6 @@
 package com.example.User_Service.controller;
 
-import com.example.User_Service.entity.User;
+import com.example.User_Service.entity.sqlite.User;
 import com.example.User_Service.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

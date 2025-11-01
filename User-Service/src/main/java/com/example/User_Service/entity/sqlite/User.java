@@ -1,9 +1,9 @@
-package com.example.User_Service.entity;
+package com.example.User_Service.entity.sqlite;
 
 import javax.persistence.*;
 
 @Entity
-@Table(name = "Users")
+@Table(name = "Users") // SQLite table name
 public class User {
 
     @Id
@@ -22,9 +22,14 @@ public class User {
     @Transient
     private String password; // receive plain password from frontend
 
+    @Column
     private String created_at;
+
+    @Column
     private String updated_at;
-    private int is_synced;
+
+    @Column(name = "is_synced") // maps to SQLite column
+    private int isSynced;
 
     public User() {}
 
@@ -50,6 +55,6 @@ public class User {
     public String getUpdated_at() { return updated_at; }
     public void setUpdated_at(String updated_at) { this.updated_at = updated_at; }
 
-    public int getIs_synced() { return is_synced; }
-    public void setIs_synced(int is_synced) { this.is_synced = is_synced; }
+    public int getIsSynced() { return isSynced; }
+    public void setIsSynced(int isSynced) { this.isSynced = isSynced; }
 }
