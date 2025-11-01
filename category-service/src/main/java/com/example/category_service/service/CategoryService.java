@@ -1,7 +1,7 @@
 package com.example.category_service.service;
 
-import com.example.category_service.entity.Category;
-import com.example.category_service.repository.CategoryRepository;
+import com.example.category_service.entity.sqlite.SQLiteCategory;
+import com.example.category_service.repository.sqlite.SQLiteCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,30 +12,30 @@ import java.util.Optional;
 public class CategoryService {
 
     @Autowired
-    private CategoryRepository categoryRepository;
+    private SQLiteCategoryRepository categoryRepository;
 
     // Create
-    public Category createCategory(Category category) {
+    public SQLiteCategory createCategory(SQLiteCategory category) {
         return categoryRepository.save(category);
     }
 
     // Read all
-    public List<Category> getAllCategories() {
+    public List<SQLiteCategory> getAllCategories() {
         return categoryRepository.findAll();
     }
 
     // Read by ID
-    public Optional<Category> getCategoryById(Integer id) {
+    public Optional<SQLiteCategory> getCategoryById(Integer id) {
         return categoryRepository.findById(id);
     }
 
     // Update
-    public Category updateCategory(Integer id, Category updatedCategory) {
+    public SQLiteCategory updateCategory(Integer id, SQLiteCategory updatedCategory) {
         return categoryRepository.findById(id).map(category -> {
-            category.setCategory_name(updatedCategory.getCategory_name());
-            category.setCategory_type(updatedCategory.getCategory_type());
+            category.setCategoryName(updatedCategory.getCategoryName());
+            category.setCategoryType(updatedCategory.getCategoryType());
             category.setDescription(updatedCategory.getDescription());
-            category.setIs_synced(updatedCategory.getIs_synced());
+            category.setIsSynced(updatedCategory.getIsSynced());
             return categoryRepository.save(category);
         }).orElseThrow(() -> new RuntimeException("Category not found with id " + id));
     }

@@ -1,6 +1,6 @@
 package com.example.category_service.controller;
 
-import com.example.category_service.entity.Category;
+import com.example.category_service.entity.sqlite.SQLiteCategory;
 import com.example.category_service.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,19 +17,19 @@ public class CategoryController {
 
     // Create
     @PostMapping
-    public Category createCategory(@RequestBody Category category) {
+    public SQLiteCategory createCategory(@RequestBody SQLiteCategory category) {
         return categoryService.createCategory(category);
     }
 
     // Read all
     @GetMapping
-    public List<Category> getAllCategories() {
+    public List<SQLiteCategory> getAllCategories() {
         return categoryService.getAllCategories();
     }
 
     // Read by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Category> getCategoryById(@PathVariable Integer id) {
+    public ResponseEntity<SQLiteCategory> getCategoryById(@PathVariable Integer id) {
         return categoryService.getCategoryById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -37,7 +37,7 @@ public class CategoryController {
 
     // Update
     @PutMapping("/{id}")
-    public ResponseEntity<Category> updateCategory(@PathVariable Integer id, @RequestBody Category category) {
+    public ResponseEntity<SQLiteCategory> updateCategory(@PathVariable Integer id, @RequestBody SQLiteCategory category) {
         try {
             return ResponseEntity.ok(categoryService.updateCategory(id, category));
         } catch (RuntimeException e) {
