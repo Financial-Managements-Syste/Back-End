@@ -1,12 +1,12 @@
-package com.example.savving_service.entity;
+package com.example.savving_service.entity.sqlite;
 
-
-import java.time.LocalDate;
 import javax.persistence.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "SavingsGoals")
-public class SavingsGoals {
+public class SQLiteSavingsGoal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,43 +22,56 @@ public class SavingsGoals {
     @Column(name = "target_amount", nullable = false)
     private double targetAmount;
 
-    @Column(name = "current_amount", nullable = false)
-    private double currentAmount;
+    @Column(name = "current_amount")
+    private double currentAmount = 0;
 
     @Column(name = "target_date", nullable = false)
-    @Convert(converter = LocalDateConverter.class) // ✅ Use converter
     private LocalDate targetDate;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @Column(name = "status")
-    private String status;
+    private String status = "Active";
 
     @Column(name = "is_synced")
-    private int isSynced;
+    private int isSynced = 0;
 
-    // Constructors, getters, setters
-    public SavingsGoals() {}
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
 
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // Getters and Setters
     public int getGoalId() { return goalId; }
     public void setGoalId(int goalId) { this.goalId = goalId; }
-
     public int getUserId() { return userId; }
     public void setUserId(int userId) { this.userId = userId; }
-
     public String getGoalName() { return goalName; }
     public void setGoalName(String goalName) { this.goalName = goalName; }
-
     public double getTargetAmount() { return targetAmount; }
     public void setTargetAmount(double targetAmount) { this.targetAmount = targetAmount; }
-
     public double getCurrentAmount() { return currentAmount; }
     public void setCurrentAmount(double currentAmount) { this.currentAmount = currentAmount; }
-
     public LocalDate getTargetDate() { return targetDate; }
     public void setTargetDate(LocalDate targetDate) { this.targetDate = targetDate; }
-
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-
     public int getIsSynced() { return isSynced; }
     public void setIsSynced(int isSynced) { this.isSynced = isSynced; }
+
+
 }

@@ -1,4 +1,4 @@
-package com.example.savving_service.entity;
+package com.example.savving_service.entity.sqlite;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

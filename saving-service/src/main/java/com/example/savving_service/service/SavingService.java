@@ -1,7 +1,7 @@
 package com.example.savving_service.service;
 
-import com.example.savving_service.entity.SavingsGoals;
-import com.example.savving_service.repository.SavingRepository;
+import com.example.savving_service.entity.sqlite.SQLiteSavingsGoal;
+import com.example.savving_service.repository.sqlite.SQLiteSavingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,76 +11,76 @@ import java.util.List;
 public class SavingService {
 
     @Autowired
-    private SavingRepository savingRepository;
+    private SQLiteSavingRepository SQLiteSavingRepository;
 
     // Create new saving goal
-    public SavingsGoals createSavingGoal(SavingsGoals savingsGoals) {
+    public SQLiteSavingsGoal createSavingGoal(SQLiteSavingsGoal SQLiteSavingsGoal) {
         // Default values if not provided
-        if (savingsGoals.getStatus() == null || savingsGoals.getStatus().isEmpty()) {
-            savingsGoals.setStatus("Active");
+        if (SQLiteSavingsGoal.getStatus() == null || SQLiteSavingsGoal.getStatus().isEmpty()) {
+            SQLiteSavingsGoal.setStatus("Active");
         }
-        if (savingsGoals.getCurrentAmount() == 0) {
-            savingsGoals.setCurrentAmount(0);
+        if (SQLiteSavingsGoal.getCurrentAmount() == 0) {
+            SQLiteSavingsGoal.setCurrentAmount(0);
         }
-        return savingRepository.save(savingsGoals);
+        return SQLiteSavingRepository.save(SQLiteSavingsGoal);
     }
 
     //  Get all savings
-    public List<SavingsGoals> getAllSavings() {
-        return savingRepository.findAll();
+    public List<SQLiteSavingsGoal> getAllSavings() {
+        return SQLiteSavingRepository.findAll();
     }
 
     //  Get saving goal by ID
-    public SavingsGoals getSavingById(int id) {
-        return savingRepository.findById(id)
+    public SQLiteSavingsGoal getSavingById(int id) {
+        return SQLiteSavingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Saving goal not found with ID: " + id));
     }
 
     //  Get all savings by user ID
-    public List<SavingsGoals> getSavingsByUserId(int userId) {
-        return savingRepository.findByUserId(userId);
+    public List<SQLiteSavingsGoal> getSavingsByUserId(int userId) {
+        return SQLiteSavingRepository.findByUserId(userId);
     }
 
     //  Update existing saving goal
-    public SavingsGoals updateSavingGoal(int id, SavingsGoals updatedSavingsGoals) {
-        return savingRepository.findById(id).map(savingsGoals -> {
-            savingsGoals.setGoalName(updatedSavingsGoals.getGoalName());
-            savingsGoals.setTargetAmount(updatedSavingsGoals.getTargetAmount());
-            savingsGoals.setCurrentAmount(updatedSavingsGoals.getCurrentAmount());
-            savingsGoals.setTargetDate(updatedSavingsGoals.getTargetDate());
-            savingsGoals.setStatus(updatedSavingsGoals.getStatus());
-            savingsGoals.setIsSynced(updatedSavingsGoals.getIsSynced());
-            return savingRepository.save(savingsGoals);
+    public SQLiteSavingsGoal updateSavingGoal(int id, SQLiteSavingsGoal updatedSQLiteSavingsGoal) {
+        return SQLiteSavingRepository.findById(id).map(SQLiteSavingsGoal -> {
+            SQLiteSavingsGoal.setGoalName(updatedSQLiteSavingsGoal.getGoalName());
+            SQLiteSavingsGoal.setTargetAmount(updatedSQLiteSavingsGoal.getTargetAmount());
+            SQLiteSavingsGoal.setCurrentAmount(updatedSQLiteSavingsGoal.getCurrentAmount());
+            SQLiteSavingsGoal.setTargetDate(updatedSQLiteSavingsGoal.getTargetDate());
+            SQLiteSavingsGoal.setStatus(updatedSQLiteSavingsGoal.getStatus());
+            SQLiteSavingsGoal.setIsSynced(updatedSQLiteSavingsGoal.getIsSynced());
+            return SQLiteSavingRepository.save(SQLiteSavingsGoal);
         }).orElseThrow(() -> new RuntimeException("Saving goal not found with ID: " + id));
     }
 
     // Delete saving goal
     public void deleteSavingGoal(int id) {
-        if (!savingRepository.existsById(id)) {
+        if (!SQLiteSavingRepository.existsById(id)) {
             throw new RuntimeException("Saving goal not found with ID: " + id);
         }
-        savingRepository.deleteById(id);
+        SQLiteSavingRepository.deleteById(id);
     }
 
     // Add funds to saving goal
-    public SavingsGoals addFunds(int goalId, double amount) {
-        return savingRepository.findById(goalId).map(savingsGoals -> {
-            double newAmount = savingsGoals.getCurrentAmount() + amount;
-            savingsGoals.setCurrentAmount(newAmount);
+    public SQLiteSavingsGoal addFunds(int goalId, double amount) {
+        return SQLiteSavingRepository.findById(goalId).map(SQLiteSavingsGoal -> {
+            double newAmount = SQLiteSavingsGoal.getCurrentAmount() + amount;
+            SQLiteSavingsGoal.setCurrentAmount(newAmount);
 
             // Auto-complete if target is reached
-            if (newAmount >= savingsGoals.getTargetAmount()) {
-                savingsGoals.setStatus("Completed");
+            if (newAmount >= SQLiteSavingsGoal.getTargetAmount()) {
+                SQLiteSavingsGoal.setStatus("Completed");
             }
 
-            return savingRepository.save(savingsGoals);
+            return SQLiteSavingRepository.save(SQLiteSavingsGoal);
         }).orElseThrow(() -> new RuntimeException("Saving goal not found with ID: " + goalId));
     }
 
     //  Calculate goal progress percentage
     public double calculateProgress(int goalId) {
-        SavingsGoals savingsGoals = getSavingById(goalId);
-        if (savingsGoals.getTargetAmount() == 0) return 0;
-        return (savingsGoals.getCurrentAmount() / savingsGoals.getTargetAmount()) * 100.0;
+        SQLiteSavingsGoal SQLiteSavingsGoal = getSavingById(goalId);
+        if (SQLiteSavingsGoal.getTargetAmount() == 0) return 0;
+        return (SQLiteSavingsGoal.getCurrentAmount() / SQLiteSavingsGoal.getTargetAmount()) * 100.0;
     }
 }

@@ -38,6 +38,13 @@
 			<version>3.46.0.0</version>
 		</dependency>
 
+		<!-- Oracle JDBC Driver -->
+		<dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc8</artifactId>
+			<version>23.4.0.24.05</version>
+		</dependency>
+
 		<!-- DevTools (optional) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
