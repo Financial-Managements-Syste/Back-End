@@ -19,15 +19,24 @@ public class SQLiteCategory {
     @Column(name = "category_type", nullable = false)
     private String categoryType; // Income or Expense
 
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // ✅ Store as INTEGER (0/1) but handle as Boolean in code
+    // ✅ Store as INTEGER (0/1) but handle as Boolean in Java
     @Type(type = "org.hibernate.type.NumericBooleanType")
     @Column(name = "is_synced", nullable = false)
     private Boolean isSynced = false;
+
+    // Automatically set createdAt before insert
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
     // --- Getters & Setters ---
     public Integer getCategoryId() {
