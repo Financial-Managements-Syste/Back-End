@@ -1,16 +1,13 @@
-// ReportRepository.java
+// ReportRepository.java - FIXED VERSION
 package com.example.finance_reports_service.repository;
 
 import com.example.finance_reports_service.model.dto.*;
-import oracle.jdbc.OracleTypes;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.sql.CallableStatement;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 @Repository
@@ -19,122 +16,7 @@ public class ReportRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // REPORT 1: Monthly Expenditure Analysis
-    public List<MonthlyExpenditureDTO> getMonthlyExpenditure(Long userId, int month, int year) {
-        String sql = "SELECT " +
-                "    EXTRACT(MONTH FROM t.transaction_date) as month, " +
-                "    EXTRACT(YEAR FROM t.transaction_date) as year, " +
-                "    SUM(CASE WHEN t.transaction_type = 'Income' THEN t.amount ELSE 0 END) as total_income, " +
-                "    SUM(CASE WHEN t.transaction_type = 'Expense' THEN t.amount ELSE 0 END) as total_expense, " +
-                "    SUM(CASE WHEN t.transaction_type = 'Income' THEN t.amount ELSE -t.amount END) as net_savings, " +
-                "    COUNT(*) as transaction_count, " +
-                "    AVG(t.amount) as average_transaction, " +
-                "    c.category_name, " +
-                "    SUM(t.amount) as category_total " +
-                "FROM Transactions t " +
-                "JOIN Categories c ON t.category_id = c.category_id " +
-                "WHERE t.user_id = ? " +
-                "    AND EXTRACT(MONTH FROM t.transaction_date) = ? " +
-                "    AND EXTRACT(YEAR FROM t.transaction_date) = ? " +
-                "GROUP BY EXTRACT(MONTH FROM t.transaction_date), " +
-                "         EXTRACT(YEAR FROM t.transaction_date), " +
-                "         c.category_name " +
-                "ORDER BY category_total DESC";
-
-        return jdbcTemplate.query(sql,
-                (rs, rowNum) -> new MonthlyExpenditureDTO(
-                        rs.getInt("month"),
-                        rs.getInt("year"),
-                        rs.getDouble("total_income"),
-                        rs.getDouble("total_expense"),
-                        rs.getDouble("net_savings"),
-                        rs.getInt("transaction_count"),
-                        rs.getDouble("average_transaction"),
-                        rs.getString("category_name"),
-                        rs.getDouble("category_total")
-                ), userId, month, year);
-    }
-
-    // REPORT 2: Budget Adherence Tracking
-    public List<BudgetAdherenceDTO> getBudgetAdherence(Long userId) {
-        String sql = "SELECT " +
-                "    b.budget_id, " +
-                "    b.budget_name, " +
-                "    c.category_name, " +
-                "    b.budget_amount, " +
-                "    NVL(SUM(t.amount), 0) as spent_amount, " +
-                "    b.budget_amount - NVL(SUM(t.amount), 0) as remaining_amount, " +
-                "    ROUND((NVL(SUM(t.amount), 0) / b.budget_amount) * 100, 2) as percentage_used, " +
-                "    CASE " +
-                "        WHEN NVL(SUM(t.amount), 0) > b.budget_amount THEN 'OVER_BUDGET' " +
-                "        WHEN NVL(SUM(t.amount), 0) > b.budget_amount * 0.9 THEN 'WARNING' " +
-                "        ELSE 'ON_TRACK' " +
-                "    END as status, " +
-                "    b.budget_period " +
-                "FROM Budgets b " +
-                "JOIN Categories c ON b.category_id = c.category_id " +
-                "LEFT JOIN Transactions t ON t.category_id = b.category_id " +
-                "    AND t.user_id = b.user_id " +
-                "    AND t.transaction_date BETWEEN b.start_date AND b.end_date " +
-                "    AND t.transaction_type = 'Expense' " +
-                "WHERE b.user_id = ? " +
-                "    AND b.end_date >= SYSDATE " +
-                "GROUP BY b.budget_id, b.budget_name, c.category_name, " +
-                "         b.budget_amount, b.budget_period " +
-                "ORDER BY percentage_used DESC";
-
-        return jdbcTemplate.query(sql,
-                (rs, rowNum) -> new BudgetAdherenceDTO(
-                        rs.getLong("budget_id"),
-                        rs.getString("budget_name"),
-                        rs.getString("category_name"),
-                        rs.getDouble("budget_amount"),
-                        rs.getDouble("spent_amount"),
-                        rs.getDouble("remaining_amount"),
-                        rs.getDouble("percentage_used"),
-                        rs.getString("status"),
-                        rs.getString("budget_period")
-                ), userId);
-    }
-
-    // REPORT 3: Savings Goal Progress
-    public List<SavingsProgressDTO> getSavingsProgress(Long userId) {
-        String sql = "SELECT " +
-                "    goal_id, " +
-                "    goal_name, " +
-                "    target_amount, " +
-                "    current_amount, " +
-                "    target_amount - current_amount as remaining_amount, " +
-                "    ROUND((current_amount / target_amount) * 100, 2) as percentage_complete, " +
-                "    target_date, " +
-                "    TRUNC(target_date - SYSDATE) as days_remaining, " +
-                "    status, " +
-                "    CASE " +
-                "        WHEN TRUNC(target_date - SYSDATE) > 0 THEN " +
-                "            ROUND((target_amount - current_amount) / " +
-                "            (TRUNC(target_date - SYSDATE) / 30), 2) " +
-                "        ELSE 0 " +
-                "    END as required_monthly_savings " +
-                "FROM SavingsGoals " +
-                "WHERE user_id = ? " +
-                "ORDER BY percentage_complete DESC";
-
-        return jdbcTemplate.query(sql,
-                (rs, rowNum) -> new SavingsProgressDTO(
-                        rs.getLong("goal_id"),
-                        rs.getString("goal_name"),
-                        rs.getDouble("target_amount"),
-                        rs.getDouble("current_amount"),
-                        rs.getDouble("remaining_amount"),
-                        rs.getDouble("percentage_complete"),
-                        rs.getDate("target_date").toLocalDate(),
-                        rs.getInt("days_remaining"),
-                        rs.getString("status"),
-                        rs.getDouble("required_monthly_savings")
-                ), userId);
-    }
-
-    // REPORT 4: Category-wise Expense Distribution
+    // REPORT 4: Category-wise Expense Distribution - FIXED
     public List<CategoryDistributionDTO> getCategoryDistribution(Long userId,
                                                                  LocalDate startDate,
                                                                  LocalDate endDate) {
@@ -143,10 +25,6 @@ public class ReportRepository {
                 "    c.category_type, " +
                 "    SUM(t.amount) as total_amount, " +
                 "    COUNT(*) as transaction_count, " +
-                "    ROUND((SUM(t.amount) / " +
-                "        (SELECT SUM(amount) FROM Transactions " +
-                "         WHERE user_id = ? " +
-                "         AND transaction_date BETWEEN ? AND ?)) * 100, 2) as percentage, " +
                 "    AVG(t.amount) as average_amount " +
                 "FROM Transactions t " +
                 "JOIN Categories c ON t.category_id = c.category_id " +
@@ -156,39 +34,52 @@ public class ReportRepository {
                 "HAVING SUM(t.amount) > 0 " +
                 "ORDER BY total_amount DESC";
 
-        return jdbcTemplate.query(sql,
-                (rs, rowNum) -> new CategoryDistributionDTO(
-                        rs.getString("category_name"),
-                        rs.getString("category_type"),
-                        rs.getDouble("total_amount"),
-                        rs.getInt("transaction_count"),
-                        rs.getDouble("percentage"),
-                        rs.getDouble("average_amount")
-                ), userId, Date.valueOf(startDate), Date.valueOf(endDate),
-                userId, Date.valueOf(startDate), Date.valueOf(endDate));
+        List<CategoryDistributionDTO> results = jdbcTemplate.query(sql,
+                (rs, rowNum) -> {
+                    CategoryDistributionDTO dto = new CategoryDistributionDTO();
+                    dto.setCategoryName(rs.getString("category_name"));
+                    dto.setCategoryType(rs.getString("category_type"));
+                    dto.setTotalAmount(rs.getDouble("total_amount"));
+                    dto.setTransactionCount(rs.getInt("transaction_count"));
+                    dto.setAverageAmount(rs.getDouble("average_amount"));
+                    dto.setPercentage(0.0); // Will calculate after
+                    return dto;
+                }, userId, Date.valueOf(startDate), Date.valueOf(endDate));
+
+        // Calculate percentages
+        double total = results.stream()
+                .mapToDouble(CategoryDistributionDTO::getTotalAmount)
+                .sum();
+
+        if (total > 0) {
+            results.forEach(dto ->
+                    dto.setPercentage((dto.getTotalAmount() / total) * 100)
+            );
+        }
+
+        return results;
     }
 
-    // REPORT 5: Forecasted Savings Trends
+    // REPORT 5: Forecasted Savings Trends - FIXED
     public SavingsForecastDTO getSavingsForecast(Long userId) {
+        // First, get monthly aggregates for the last 6 months
         String sql = "SELECT " +
-                "    AVG(CASE WHEN transaction_type = 'Income' THEN amount ELSE 0 END) as avg_income, " +
-                "    AVG(CASE WHEN transaction_type = 'Expense' THEN amount ELSE 0 END) as avg_expense, " +
-                "    AVG(CASE WHEN transaction_type = 'Income' THEN amount ELSE -amount END) as avg_savings " +
+                "    AVG(monthly_income) as avg_income, " +
+                "    AVG(monthly_expense) as avg_expense " +
                 "FROM ( " +
                 "    SELECT " +
                 "        EXTRACT(YEAR FROM transaction_date) as year, " +
                 "        EXTRACT(MONTH FROM transaction_date) as month, " +
-                "        transaction_type, " +
-                "        SUM(amount) as amount " +
+                "        SUM(CASE WHEN transaction_type = 'Income' THEN amount ELSE 0 END) as monthly_income, " +
+                "        SUM(CASE WHEN transaction_type = 'Expense' THEN amount ELSE 0 END) as monthly_expense " +
                 "    FROM Transactions " +
                 "    WHERE user_id = ? " +
                 "        AND transaction_date >= ADD_MONTHS(SYSDATE, -6) " +
                 "    GROUP BY EXTRACT(YEAR FROM transaction_date), " +
-                "             EXTRACT(MONTH FROM transaction_date), " +
-                "             transaction_type " +
+                "             EXTRACT(MONTH FROM transaction_date) " +
                 ")";
 
-        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+        List<SavingsForecastDTO> results = jdbcTemplate.query(sql, (rs, rowNum) -> {
             double avgIncome = rs.getDouble("avg_income");
             double avgExpense = rs.getDouble("avg_expense");
             double avgSavings = avgIncome - avgExpense;
@@ -199,16 +90,162 @@ public class ReportRepository {
             else if (savingsRate > 10) trend = "STABLE";
             else trend = "NEGATIVE";
 
-            return new SavingsForecastDTO(
-                    avgIncome,
-                    avgExpense,
-                    avgSavings,
-                    savingsRate,
-                    avgSavings * 3,
-                    avgSavings * 6,
-                    avgSavings * 12,
-                    trend
-            );
+            SavingsForecastDTO dto = new SavingsForecastDTO();
+            dto.setAverageIncome(avgIncome);
+            dto.setAverageExpense(avgExpense);
+            dto.setAverageSavings(avgSavings);
+            dto.setSavingsRate(savingsRate);
+            dto.setProjected3Months(avgSavings * 3);
+            dto.setProjected6Months(avgSavings * 6);
+            dto.setProjected12Months(avgSavings * 12);
+            dto.setTrend(trend);
+
+            return dto;
         }, userId);
+
+        // Return default values if no results found
+        if (results.isEmpty()) {
+            SavingsForecastDTO defaultDto = new SavingsForecastDTO();
+            defaultDto.setAverageIncome(0.0);
+            defaultDto.setAverageExpense(0.0);
+            defaultDto.setAverageSavings(0.0);
+            defaultDto.setSavingsRate(0.0);
+            defaultDto.setProjected3Months(0.0);
+            defaultDto.setProjected6Months(0.0);
+            defaultDto.setProjected12Months(0.0);
+            defaultDto.setTrend("NEGATIVE");
+            return defaultDto;
+        }
+
+        return results.get(0);
+    }
+
+    // REPORT 1: Monthly Expenditure Analysis
+    public List<MonthlyExpenditureDTO> getMonthlyExpenditure(Long userId, int month, int year) {
+        String sql = "SELECT " +
+                "    c.category_name, " +
+                "    SUM(t.amount) as category_total, " +
+                "    COUNT(*) as transaction_count, " +
+                "    AVG(t.amount) as average_transaction " +
+                "FROM Transactions t " +
+                "JOIN Categories c ON t.category_id = c.category_id " +
+                "WHERE t.user_id = ? " +
+                "    AND EXTRACT(MONTH FROM t.transaction_date) = ? " +
+                "    AND EXTRACT(YEAR FROM t.transaction_date) = ? " +
+                "    AND t.transaction_type = 'Expense' " +
+                "GROUP BY c.category_name " +
+                "ORDER BY category_total DESC";
+
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> {
+                    MonthlyExpenditureDTO dto = new MonthlyExpenditureDTO();
+                    dto.setMonth(month);
+                    dto.setYear(year);
+                    dto.setCategoryName(rs.getString("category_name"));
+                    dto.setCategoryTotal(rs.getDouble("category_total"));
+                    dto.setTransactionCount(rs.getInt("transaction_count"));
+                    dto.setAverageTransaction(rs.getDouble("average_transaction"));
+                    return dto;
+                }, userId, month, year);
+    }
+
+    // REPORT 2: Budget Adherence Tracking
+    public List<BudgetAdherenceDTO> getBudgetAdherence(Long userId) {
+        String sql = "SELECT " +
+                "    b.budget_id, " +
+                "    b.budget_name, " +
+                "    c.category_name, " +
+                "    b.budget_amount, " +
+                "    NVL(SUM(CASE WHEN t.transaction_type = 'Expense' THEN t.amount ELSE 0 END), 0) as spent_amount, " +
+                "    b.budget_period " +
+                "FROM Budgets b " +
+                "JOIN Categories c ON b.category_id = c.category_id " +
+                "LEFT JOIN Transactions t ON t.category_id = b.category_id " +
+                "    AND t.user_id = b.user_id " +
+                "    AND t.transaction_date BETWEEN b.start_date AND b.end_date " +
+                "WHERE b.user_id = ? " +
+                "    AND b.end_date >= SYSDATE " +
+                "GROUP BY b.budget_id, b.budget_name, c.category_name, " +
+                "         b.budget_amount, b.budget_period " +
+                "ORDER BY b.budget_id";
+
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> {
+                    double budgetAmount = rs.getDouble("budget_amount");
+                    double spentAmount = rs.getDouble("spent_amount");
+                    double remainingAmount = budgetAmount - spentAmount;
+                    double percentageUsed = budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
+
+                    String status;
+                    if (spentAmount > budgetAmount) status = "OVER_BUDGET";
+                    else if (spentAmount > budgetAmount * 0.9) status = "WARNING";
+                    else status = "ON_TRACK";
+
+                    BudgetAdherenceDTO dto = new BudgetAdherenceDTO();
+                    dto.setBudgetId(rs.getLong("budget_id"));
+                    dto.setBudgetName(rs.getString("budget_name"));
+                    dto.setCategoryName(rs.getString("category_name"));
+                    dto.setBudgetAmount(budgetAmount);
+                    dto.setSpentAmount(spentAmount);
+                    dto.setRemainingAmount(remainingAmount);
+                    dto.setPercentageUsed(percentageUsed);
+                    dto.setStatus(status);
+                    dto.setBudgetPeriod(rs.getString("budget_period"));
+
+                    return dto;
+                }, userId);
+    }
+
+    // REPORT 3: Savings Goal Progress
+    public List<SavingsProgressDTO> getSavingsProgress(Long userId) {
+        String sql = "SELECT " +
+                "    goal_id, " +
+                "    goal_name, " +
+                "    target_amount, " +
+                "    current_amount, " +
+                "    target_date, " +
+                "    status " +
+                "FROM SavingsGoals " +
+                "WHERE user_id = ? " +
+                "ORDER BY goal_id";
+
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> {
+                    double targetAmount = rs.getDouble("target_amount");
+                    double currentAmount = rs.getDouble("current_amount");
+                    double remainingAmount = targetAmount - currentAmount;
+                    double percentageComplete = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+
+                    Date targetDate = rs.getDate("target_date");
+                    int daysRemaining = 0;
+                    double requiredMonthlySavings = 0;
+
+                    if (targetDate != null) {
+                        LocalDate target = targetDate.toLocalDate();
+                        LocalDate now = LocalDate.now();
+                        daysRemaining = (int) java.time.temporal.ChronoUnit.DAYS.between(now, target);
+
+                        if (daysRemaining > 0) {
+                            double monthsRemaining = daysRemaining / 30.0;
+                            if (monthsRemaining > 0) {
+                                requiredMonthlySavings = remainingAmount / monthsRemaining;
+                            }
+                        }
+                    }
+
+                    SavingsProgressDTO dto = new SavingsProgressDTO();
+                    dto.setGoalId(rs.getLong("goal_id"));
+                    dto.setGoalName(rs.getString("goal_name"));
+                    dto.setTargetAmount(targetAmount);
+                    dto.setCurrentAmount(currentAmount);
+                    dto.setRemainingAmount(remainingAmount);
+                    dto.setPercentageComplete(percentageComplete);
+                    dto.setTargetDate(targetDate != null ? targetDate.toLocalDate() : null);
+                    dto.setDaysRemaining(daysRemaining);
+                    dto.setStatus(rs.getString("status"));
+                    dto.setRequiredMonthlySavings(requiredMonthlySavings);
+
+                    return dto;
+                }, userId);
     }
 }
