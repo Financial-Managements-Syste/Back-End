@@ -5,145 +5,102 @@ import com.example.finance_reports_service.model.dto.*;
 import com.example.finance_reports_service.service.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Controller
-@RequestMapping("/reports")
+@RestController
+@RequestMapping("/api/reports")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class ReportController {
 
     @Autowired
     private ReportService reportService;
 
-    // Main reports page
-    @GetMapping
-    public String reportsHome() {
-        return "reports";
-    }
-
-    // Report 1: Monthly Expenditure
+    /**
+     * REPORT 1: Monthly Expenditure Analysis
+     * GET /api/reports/monthly-expenditure?userId=1&month=10&year=2025
+     */
     @GetMapping("/monthly-expenditure")
-    public String monthlyExpenditure(
-            @RequestParam(defaultValue = "1") Long userId,
+    public ResponseEntity<List<MonthlyExpenditureDTO>> getMonthlyExpenditure(
+            @RequestParam Long userId,
             @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year,
-            Model model) {
+            @RequestParam(required = false) Integer year) {
 
         if (month == null) month = LocalDate.now().getMonthValue();
         if (year == null) year = LocalDate.now().getYear();
 
         List<MonthlyExpenditureDTO> data = reportService.getMonthlyExpenditure(userId, month, year);
-
-        model.addAttribute("userId", userId);
-        model.addAttribute("month", month);
-        model.addAttribute("year", year);
-        model.addAttribute("expenditures", data);
-
-        return "monthly-expenditure";
+        return ResponseEntity.ok(data);
     }
 
-    // Report 2: Budget Adherence
+    /**
+     * REPORT 2: Budget Adherence Tracking
+     * GET /api/reports/budget-adherence?userId=1
+     */
     @GetMapping("/budget-adherence")
-    public String budgetAdherence(
-            @RequestParam(defaultValue = "1") Long userId,
-            Model model) {
+    public ResponseEntity<List<BudgetAdherenceDTO>> getBudgetAdherence(
+            @RequestParam Long userId) {
 
         List<BudgetAdherenceDTO> data = reportService.getBudgetAdherence(userId);
-
-        model.addAttribute("userId", userId);
-        model.addAttribute("budgets", data);
-
-        return "budget-adherence";
+        return ResponseEntity.ok(data);
     }
 
-    // Report 3: Savings Progress
+    /**
+     * REPORT 3: Savings Goal Progress
+     * GET /api/reports/savings-progress?userId=1
+     */
     @GetMapping("/savings-progress")
-    public String savingsProgress(
-            @RequestParam(defaultValue = "1") Long userId,
-            Model model) {
+    public ResponseEntity<List<SavingsProgressDTO>> getSavingsProgress(
+            @RequestParam Long userId) {
 
         List<SavingsProgressDTO> data = reportService.getSavingsProgress(userId);
-
-        model.addAttribute("userId", userId);
-        model.addAttribute("goals", data);
-
-        return "savings-progress";
+        return ResponseEntity.ok(data);
     }
 
-    // Report 4: Category Distribution
+    /**
+     * REPORT 4: Category-wise Expense Distribution
+     * GET /api/reports/category-distribution?userId=1&startDate=2025-10-01&endDate=2025-10-31
+     */
     @GetMapping("/category-distribution")
-    public String categoryDistribution(
-            @RequestParam(defaultValue = "1") Long userId,
+    public ResponseEntity<List<CategoryDistributionDTO>> getCategoryDistribution(
+            @RequestParam Long userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            Model model) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         if (startDate == null) startDate = LocalDate.now().withDayOfMonth(1);
         if (endDate == null) endDate = LocalDate.now();
 
         List<CategoryDistributionDTO> data = reportService.getCategoryDistribution(userId, startDate, endDate);
-
-        model.addAttribute("userId", userId);
-        model.addAttribute("startDate", startDate);
-        model.addAttribute("endDate", endDate);
-        model.addAttribute("categories", data);
-
-        return "category-distribution";
+        return ResponseEntity.ok(data);
     }
 
-    // Report 5: Savings Forecast
+    /**
+     * REPORT 5: Forecasted Savings Trends
+     * GET /api/reports/savings-forecast?userId=1
+     */
     @GetMapping("/savings-forecast")
-    public String savingsForecast(
-            @RequestParam(defaultValue = "1") Long userId,
-            Model model) {
+    public ResponseEntity<SavingsForecastDTO> getSavingsForecast(
+            @RequestParam Long userId) {
 
         SavingsForecastDTO data = reportService.getSavingsForecast(userId);
-
-        model.addAttribute("userId", userId);
-        model.addAttribute("forecast", data);
-
-        return "savings-forecast";
+        return ResponseEntity.ok(data);
     }
 
-    // REST API Endpoints (for AJAX/JSON responses)
 
-    @GetMapping("/api/monthly-expenditure")
-    @ResponseBody
-    public List<MonthlyExpenditureDTO> getMonthlyExpenditureAPI(
-            @RequestParam Long userId,
-            @RequestParam int month,
-            @RequestParam int year) {
-        return reportService.getMonthlyExpenditure(userId, month, year);
-    }
+    @GetMapping("/summary")
+    public ResponseEntity<ReportSummaryDTO> getReportsSummary(@RequestParam Long userId) {
+        ReportSummaryDTO summary = new ReportSummaryDTO();
 
-    @GetMapping("/api/budget-adherence")
-    @ResponseBody
-    public List<BudgetAdherenceDTO> getBudgetAdherenceAPI(@RequestParam Long userId) {
-        return reportService.getBudgetAdherence(userId);
-    }
+        LocalDate now = LocalDate.now();
+        summary.setMonthlyExpenditure(reportService.getMonthlyExpenditure(userId, now.getMonthValue(), now.getYear()));
+        summary.setBudgetAdherence(reportService.getBudgetAdherence(userId));
+        summary.setSavingsProgress(reportService.getSavingsProgress(userId));
+        summary.setCategoryDistribution(reportService.getCategoryDistribution(userId, now.withDayOfMonth(1), now));
+        summary.setSavingsForecast(reportService.getSavingsForecast(userId));
 
-    @GetMapping("/api/savings-progress")
-    @ResponseBody
-    public List<SavingsProgressDTO> getSavingsProgressAPI(@RequestParam Long userId) {
-        return reportService.getSavingsProgress(userId);
-    }
-
-    @GetMapping("/api/category-distribution")
-    @ResponseBody
-    public List<CategoryDistributionDTO> getCategoryDistributionAPI(
-            @RequestParam Long userId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return reportService.getCategoryDistribution(userId, startDate, endDate);
-    }
-
-    @GetMapping("/api/savings-forecast")
-    @ResponseBody
-    public SavingsForecastDTO getSavingsForecastAPI(@RequestParam Long userId) {
-        return reportService.getSavingsForecast(userId);
+        return ResponseEntity.ok(summary);
     }
 }

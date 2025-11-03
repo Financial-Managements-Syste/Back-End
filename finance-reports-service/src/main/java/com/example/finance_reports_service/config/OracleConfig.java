@@ -1,4 +1,3 @@
-
 package com.example.finance_reports_service.config;
 
 import com.zaxxer.hikari.HikariConfig;
@@ -6,20 +5,22 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 
 @Configuration
+@PropertySource("classpath:application.properties")
 public class OracleConfig {
 
-    @Value("${spring.datasource.url}")
+    @Value("${oracle.datasource.url}")
     private String url;
 
-    @Value("${spring.datasource.username}")
+    @Value("${oracle.datasource.username}")
     private String username;
 
-    @Value("${spring.datasource.password}")
+    @Value("${oracle.datasource.password}")
     private String password;
 
     @Bean
