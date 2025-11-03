@@ -5,9 +5,14 @@ CREATE TABLE Users (
     email VARCHAR2(100) NOT NULL,
     password_hash VARCHAR2(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_sync_at TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+ALTER TABLE Users
+DROP COLUMN last_sync_at;
+
+ALTER TABLE USERS ADD (LAST_SYNC_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
 CREATE TABLE Categories (
     category_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -18,11 +23,18 @@ CREATE TABLE Categories (
     CONSTRAINT chk_category_type CHECK (category_type IN ('Income', 'Expense'))
 );
 
+DROP TABLE Categories;
 
+DELETE FROM Categories;
+TRUNCATE TABLE CATEGORIES;
+
+
+DELETE FROM SavingsGoals;
+ALTER TABLE SavingsGoals MODIFY goal_id GENERATED AS IDENTITY (START WITH 1);
 
 
 CREATE TABLE Transactions (
-    transaction_id NUMBER PRIMARY KEY,                
+    transaction_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,                
     user_id        NUMBER NOT NULL,
     category_id    NUMBER NOT NULL,
     amount         NUMBER(10,2) NOT NULL,
@@ -32,7 +44,7 @@ CREATE TABLE Transactions (
     payment_method VARCHAR2(255),                      
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_synced      NUMBER DEFAULT 0,                  
+                      
 
     CONSTRAINT fk_trans_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_trans_category FOREIGN KEY (category_id) REFERENCES Categories(category_id),
@@ -46,6 +58,8 @@ CREATE TABLE Budgets (
     budget_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id NUMBER NOT NULL,
     category_id NUMBER NOT NULL,
+    budget_name VARCHAR2(255),
+    budget_description VARCHAR2(255),
     budget_amount NUMBER(10,2) NOT NULL,
     budget_period VARCHAR2(20) NOT NULL,
     start_date DATE NOT NULL,
@@ -59,8 +73,11 @@ CREATE TABLE Budgets (
     CONSTRAINT chk_budget_dates CHECK (end_date > start_date)
 );
 
+
+DROP TABLE Budgets;
+
 CREATE TABLE SavingsGoals (
-    goal_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    goal_id NUMBER PRIMARY KEY GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id NUMBER NOT NULL,
     goal_name VARCHAR2(100) NOT NULL,
     target_amount NUMBER(10,2) NOT NULL,
@@ -74,6 +91,11 @@ CREATE TABLE SavingsGoals (
     CONSTRAINT chk_goal_current CHECK (current_amount >= 0),
     CONSTRAINT chk_goal_status CHECK (status IN ('Active', 'Completed', 'Cancelled'))
 );
+
+
+DROP TABLE SavingsGoals;
+CASCADE CONSTRAINTS;
+
 
 
 CREATE TABLE SyncMetadata (
