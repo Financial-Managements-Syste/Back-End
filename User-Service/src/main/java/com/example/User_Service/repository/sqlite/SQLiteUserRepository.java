@@ -15,4 +15,7 @@ public interface SQLiteUserRepository extends JpaRepository<User, Integer> {
     // No change needed, matches `username` property
     User findByUsername(String username);
 
+    User findByEmail(String email);
+
+
 }
