@@ -1,26 +1,17 @@
 package com.example.budget_service.service;
 
 import com.example.budget_service.entity.sqlite.SQLiteBudget;
-import com.example.budget_service.entity.oracle.OracleBudget;
 import com.example.budget_service.repository.sqlite.SQLiteBudgetRepository;
 import com.example.budget_service.repository.oracle.OracleBudgetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.List;
 
 @Service
-@ConditionalOnProperty(name = "oracle.enabled", havingValue = "true")
 public class BudgetSyncService {
-
-    private static final Logger log = LoggerFactory.getLogger(BudgetSyncService.class);
 
     @Autowired
     private SQLiteBudgetRepository sqliteRepo;
@@ -28,120 +19,95 @@ public class BudgetSyncService {
     @Autowired
     private OracleBudgetRepository oracleRepo;
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    @Transactional(transactionManager = "oracleTransactionManager")
+    // Master sync process (can be called from scheduler or manually)
     public void syncBudgets() {
-        List<SQLiteBudget> sqliteBudgets = sqliteRepo.findAll();
-        List<OracleBudget> oracleBudgets = oracleRepo.findAll();
+        System.out.println("⏳ [Sync] Starting full budget sync process...");
 
-        int inserted = 0, updated = 0, deleted = 0, failed = 0;
+        syncInserts();
+        syncUpdates();
+        syncDeletes();
 
-        Map<String, OracleBudget> oracleMap = new HashMap<>();
-        for (OracleBudget ob : oracleBudgets) {
-            String key = generateKey(ob.getUserId(), ob.getCategoryId(), ob.getBudgetName());
-            oracleMap.put(key, ob);
-        }
+        System.out.println("✅ [Sync] Full budget sync completed successfully.");
+    }
 
-        // --- INSERT / UPDATE ---
-        for (SQLiteBudget sb : sqliteBudgets) {
-            String key = generateKey((long) sb.getUserId(), (long) sb.getCategoryId(), sb.getBudgetName());
-            OracleBudget ob = oracleMap.get(key);
+    // --- INSERT SYNC ---
+    public void syncInserts() {
+        List<SQLiteBudget> newBudgets = sqliteRepo.findBySyncStatus("NEW");
 
+        for (SQLiteBudget b : newBudgets) {
             try {
-                LocalDate startDate = parseDate(sb.getStartDate());
-                LocalDate endDate = parseDate(sb.getEndDate());
+                oracleRepo.insertBudgetFromSQLite(
+                        (long) b.getUserId(),
+                        (long) b.getCategoryId(),
+                        b.getBudgetName(),
+                        b.getBudgetDescription(),
+                        b.getBudgetAmount(),
+                        b.getBudgetPeriod(),
+                        Date.valueOf(b.getStartDate()),
+                        Date.valueOf(b.getEndDate()),
+                        Timestamp.valueOf(b.getCreatedAt()),
+                        Timestamp.valueOf(b.getUpdatedAt())
+                );
 
-                if (ob == null) {
-                    // INSERT
-                    OracleBudget newBudget = new OracleBudget();
-                    newBudget.setUserId((long) sb.getUserId());
-                    newBudget.setCategoryId((long) sb.getCategoryId());
-                    newBudget.setBudgetName(sb.getBudgetName());
-                    newBudget.setBudgetDescription(sb.getBudgetDescription());
-                    newBudget.setBudgetAmount(sb.getBudgetAmount());
-                    newBudget.setBudgetPeriod(sb.getBudgetPeriod());
-                    newBudget.setStartDate(startDate);
-                    newBudget.setEndDate(endDate);
-                    newBudget.setCreatedAt(LocalDateTime.now());
-                    newBudget.setUpdatedAt(LocalDateTime.now());
+                // Mark as synced
+                b.setIsSynced(1);
+                b.setSyncStatus("SYNCED");
+                sqliteRepo.save(b);
 
-                    oracleRepo.save(newBudget);
-
-                    sb.setIsSynced(1);
-                    sqliteRepo.save(sb);
-                    inserted++;
-                } else {
-                    // UPDATE
-                    boolean changed = false;
-                    if (!Objects.equals(ob.getBudgetAmount(), sb.getBudgetAmount())) {
-                        ob.setBudgetAmount(sb.getBudgetAmount());
-                        changed = true;
-                    }
-                    if (!Objects.equals(ob.getBudgetPeriod(), sb.getBudgetPeriod())) {
-                        ob.setBudgetPeriod(sb.getBudgetPeriod());
-                        changed = true;
-                    }
-                    if (!Objects.equals(ob.getBudgetDescription(), sb.getBudgetDescription())) {
-                        ob.setBudgetDescription(sb.getBudgetDescription());
-                        changed = true;
-                    }
-                    if (!Objects.equals(ob.getStartDate(), startDate)) {
-                        ob.setStartDate(startDate);
-                        changed = true;
-                    }
-                    if (!Objects.equals(ob.getEndDate(), endDate)) {
-                        ob.setEndDate(endDate);
-                        changed = true;
-                    }
-
-                    if (changed) {
-                        ob.setUpdatedAt(LocalDateTime.now());
-                        oracleRepo.save(ob);
-                    }
-
-                    sb.setIsSynced(1);
-                    sqliteRepo.save(sb);
-                    updated++;
-                }
+                System.out.println("✅ [Insert Sync] Synced budget ID: " + b.getBudgetId());
             } catch (Exception e) {
-                failed++;
-                log.error("Failed to sync SQLite budget id={} to Oracle: {}", sb.getBudgetId(), e.getMessage());
+                System.err.println("❌ [Insert Sync] Failed for Budget ID " + b.getBudgetId() + ": " + e.getMessage());
             }
         }
+    }
 
-        // --- DELETE Oracle budgets not in SQLite ---
-        Set<String> sqliteKeys = new HashSet<>();
-        for (SQLiteBudget sb : sqliteBudgets) {
-            sqliteKeys.add(generateKey((long) sb.getUserId(), (long) sb.getCategoryId(), sb.getBudgetName()));
-        }
+    // --- UPDATE SYNC ---
+    public void syncUpdates() {
+        List<SQLiteBudget> updatedBudgets = sqliteRepo.findBySyncStatus("UPDATED");
 
-        for (OracleBudget ob : oracleBudgets) {
-            String key = generateKey(ob.getUserId(), ob.getCategoryId(), ob.getBudgetName());
-            if (!sqliteKeys.contains(key)) {
-                try {
-                    oracleRepo.delete(ob);
-                    deleted++;
-                } catch (Exception e) {
-                    failed++;
-                    log.error("Failed to delete Oracle budget id={} : {}", ob.getBudgetId(), e.getMessage());
-                }
+        for (SQLiteBudget b : updatedBudgets) {
+            try {
+                oracleRepo.updateBudgetFromSQLite(
+                        (long) b.getBudgetId(),
+                        (long) b.getUserId(),
+                        (long) b.getCategoryId(),
+                        b.getBudgetName(),
+                        b.getBudgetDescription(),
+                        b.getBudgetAmount(),
+                        b.getBudgetPeriod(),
+                        Date.valueOf(b.getStartDate()),
+                        Date.valueOf(b.getEndDate()),
+                        Timestamp.valueOf(b.getUpdatedAt())
+                );
+
+                b.setIsSynced(1);
+                b.setSyncStatus("SYNCED");
+                sqliteRepo.save(b);
+
+                System.out.println("✅ [Update Sync] Synced budget ID: " + b.getBudgetId());
+            } catch (Exception e) {
+                System.err.println("❌ [Update Sync] Failed for Budget ID " + b.getBudgetId() + ": " + e.getMessage());
             }
         }
-
-        log.info("Budget sync completed. Inserted: {}, Updated: {}, Deleted: {}, Failed: {}", inserted, updated, deleted, failed);
     }
 
-    private String generateKey(Long userId, Long categoryId, String budgetName) {
-        return userId + "_" + categoryId + "_" + budgetName;
-    }
+    // --- DELETE SYNC ---
+    public void syncDeletes() {
+        List<SQLiteBudget> deletedBudgets = sqliteRepo.findBySyncStatus("DELETED");
 
-    private LocalDate parseDate(String dateStr) {
-        try {
-            return LocalDate.parse(dateStr, formatter);
-        } catch (Exception e) {
-            log.warn("Invalid date format '{}', using current date", dateStr);
-            return LocalDate.now();
+        for (SQLiteBudget b : deletedBudgets) {
+            try {
+                oracleRepo.deleteBudgetFromSQLite((long) b.getBudgetId());
+
+                // After delete sync, remove or mark as permanently synced
+                b.setIsSynced(1);
+                b.setSyncStatus("SYNCED");
+                sqliteRepo.delete(b);
+
+                System.out.println("🗑️ [Delete Sync] Deleted budget ID: " + b.getBudgetId());
+            } catch (Exception e) {
+                System.err.println("❌ [Delete Sync] Failed for Budget ID " + b.getBudgetId() + ": " + e.getMessage());
+            }
         }
     }
 }

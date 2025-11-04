@@ -45,6 +45,13 @@ public class SQLiteBudget {
     @Column(name = "is_synced")
     private int isSynced;
 
+    @Column(name = "sync_status")
+    private String syncStatus; // NEW, UPDATED, DELETED, SYNCED
+
+    @Column(name = "is_deleted")
+    private int isDeleted; // 0 = not deleted, 1 = deleted
+
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -93,5 +100,19 @@ public class SQLiteBudget {
     public int getIsSynced() { return isSynced; }
     public void setIsSynced(int isSynced) { this.isSynced = isSynced; }
 
+    public String getSyncStatus() {
+        return syncStatus;
+    }
 
+    public void setSyncStatus(String syncStatus) {
+        this.syncStatus = syncStatus;
+    }
+
+    public int getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(int isDeleted) {
+        this.isDeleted = isDeleted;
+    }
 }

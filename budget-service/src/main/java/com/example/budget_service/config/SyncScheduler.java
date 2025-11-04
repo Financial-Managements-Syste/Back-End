@@ -13,10 +13,17 @@ public class SyncScheduler {
     @Autowired
     private BudgetSyncService syncService;
 
-    // Every 30 seconds
+    // Automatically runs every 30 seconds
     @Scheduled(fixedRate = 30000)
     public void scheduleSync() {
-        System.out.println("SyncScheduler triggered...");
-        syncService.syncBudgets();
+        System.out.println("⏳ [Scheduler] Budget sync process started...");
+
+        try {
+            syncService.syncBudgets();
+
+            System.out.println("✅ [Scheduler] Budget sync process completed.");
+        } catch (Exception e) {
+            System.err.println("❌ [Scheduler] Budget sync failed: " + e.getMessage());
+        }
     }
 }
