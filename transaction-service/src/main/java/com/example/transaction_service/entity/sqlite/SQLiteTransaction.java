@@ -32,37 +32,102 @@ public class SQLiteTransaction {
     @Column(name = "payment_method")
     private String paymentMethod;
 
-    // ✅ Add this for sync tracking
     @Column(name = "is_synced")
     private int isSynced = 0; // 0 = not synced, 1 = synced
 
+    @Column(name = "sync_status")
+    private String syncStatus = "NEW"; // NEW, UPDATED, DELETED, SYNCED
+
+    @Column(name = "is_deleted")
+    private int isDeleted = 0; // 0 = active, 1 = deleted
+
     public SQLiteTransaction() {}
 
-    // --- Getters & Setters ---
-    public int getTransactionId() { return transactionId; }
-    public void setTransactionId(int transactionId) { this.transactionId = transactionId; }
+    public int getTransactionId() {
+        return transactionId;
+    }
 
-    public int getUserId() { return userId; }
-    public void setUserId(int userId) { this.userId = userId; }
+    public void setTransactionId(int transactionId) {
+        this.transactionId = transactionId;
+    }
 
-    public int getCategoryId() { return categoryId; }
-    public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+    public int getUserId() {
+        return userId;
+    }
 
-    public double getAmount() { return amount; }
-    public void setAmount(double amount) { this.amount = amount; }
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
 
-    public String getTransactionType() { return transactionType; }
-    public void setTransactionType(String transactionType) { this.transactionType = transactionType; }
+    public int getCategoryId() {
+        return categoryId;
+    }
 
-    public String getTransactionDate() { return transactionDate; }
-    public void setTransactionDate(String transactionDate) { this.transactionDate = transactionDate; }
+    public void setCategoryId(int categoryId) {
+        this.categoryId = categoryId;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public double getAmount() {
+        return amount;
+    }
 
-    public String getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
 
-    public int getIsSynced() { return isSynced; }
-    public void setIsSynced(int isSynced) { this.isSynced = isSynced; }
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    public void setTransactionType(String transactionType) {
+        this.transactionType = transactionType;
+    }
+
+    public String getTransactionDate() {
+        return transactionDate;
+    }
+
+    public void setTransactionDate(String transactionDate) {
+        this.transactionDate = transactionDate;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public int getIsSynced() {
+        return isSynced;
+    }
+
+    public void setIsSynced(int isSynced) {
+        this.isSynced = isSynced;
+    }
+
+    public String getSyncStatus() {
+        return syncStatus;
+    }
+
+    public void setSyncStatus(String syncStatus) {
+        this.syncStatus = syncStatus;
+    }
+
+    public int getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(int isDeleted) {
+        this.isDeleted = isDeleted;
+    }
 }

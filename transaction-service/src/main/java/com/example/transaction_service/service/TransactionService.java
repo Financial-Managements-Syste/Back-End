@@ -49,14 +49,25 @@ public class TransactionService {
             transaction.setTransactionDate(updatedTransaction.getTransactionDate());
             transaction.setDescription(updatedTransaction.getDescription());
             transaction.setPaymentMethod(updatedTransaction.getPaymentMethod());
+            // Sync tracking
+            transaction.setIsSynced(0);
+            transaction.setSyncStatus("UPDATED");
             return SQLiteTransactionRepository.save(transaction);
         }).orElseThrow(() -> new RuntimeException("Transaction not found with ID " + id));
     }
 
 
+
     //  Delete Transaction
     public void deleteTransaction(int id) {
-        SQLiteTransactionRepository.deleteById(id);
+        SQLiteTransactionRepository.findById(id).ifPresent(transaction -> {
+            // Mark for sync - don't delete yet, let sync handle the deletion
+            transaction.setSyncStatus("DELETED");
+            transaction.setIsSynced(0);
+            transaction.setIsDeleted(1); // Soft delete flag
+            SQLiteTransactionRepository.save(transaction);
+            // Note: Actual deletion from SQLite happens in syncDeletes() after Oracle deletion
+        });
     }
 }
 

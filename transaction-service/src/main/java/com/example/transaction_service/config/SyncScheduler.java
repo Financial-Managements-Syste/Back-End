@@ -1,6 +1,6 @@
 package com.example.transaction_service.config;
 
-import com.example.transaction_service.service.SyncService;
+import com.example.transaction_service.service.TransactionSyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -11,11 +11,19 @@ import org.springframework.stereotype.Component;
 public class SyncScheduler {
 
     @Autowired
-    private SyncService syncService;
+    private TransactionSyncService syncService;
 
-    // Every 30 seconds
+    // Automatically runs every 30 seconds
     @Scheduled(fixedRate = 30000)
     public void scheduleSync() {
-        syncService.syncTransactions();
+        System.out.println("⏳ [Scheduler] Transaction sync process started...");
+
+        try {
+            syncService.syncTransactions();
+            System.out.println("✅ [Scheduler] Transaction sync process completed.");
+        } catch (Exception e) {
+            System.err.println("❌ [Scheduler] Transaction sync failed: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
