@@ -1,19 +1,15 @@
 package com.example.category_service.service;
 
 import com.example.category_service.entity.sqlite.SQLiteCategory;
-import com.example.category_service.entity.oracle.OracleCategory;
 import com.example.category_service.repository.oracle.OracleCategoryRepository;
 import com.example.category_service.repository.sqlite.SQLiteCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.sql.Timestamp;
+import java.util.List;
 
 @Service
-@EnableScheduling
 public class CategorySyncService {
 
     @Autowired
@@ -22,57 +18,85 @@ public class CategorySyncService {
     @Autowired
     private OracleCategoryRepository oracleRepo;
 
-    @Scheduled(fixedRate = 60000) // every 1 minute
+    // Master sync process (can be called manually or from a scheduler)
     public void syncCategories() {
-        List<SQLiteCategory> sqliteCategories = sqliteRepo.findAll();
-        List<OracleCategory> oracleCategories = oracleRepo.findAll();
+        System.out.println("⏳ [Sync] Starting full category sync process...");
 
-        // ✅ Convert SQLite categories into a map for faster lookup
-        Map<String, SQLiteCategory> sqliteMap = sqliteCategories.stream()
-                .collect(Collectors.toMap(SQLiteCategory::getCategoryName, c -> c));
+        syncInserts();
+        syncUpdates();
+        syncDeletes();
 
-        // ✅ 1. Handle Inserts and Updates
-        for (SQLiteCategory sqliteCat : sqliteCategories) {
-            Optional<OracleCategory> existingOpt = oracleRepo.findByCategoryName(sqliteCat.getCategoryName());
+        System.out.println("✅ [Sync] Full category sync completed successfully.");
+    }
 
-            if (existingOpt.isPresent()) {
-                OracleCategory oracleCat = existingOpt.get();
+    // --- INSERT SYNC ---
+    public void syncInserts() {
+        List<SQLiteCategory> newCategories = sqliteRepo.findBySyncStatus("NEW");
 
-                // Only update if something changed
-                if (!Objects.equals(oracleCat.getCategoryType(), sqliteCat.getCategoryType()) ||
-                        !Objects.equals(oracleCat.getDescription(), sqliteCat.getDescription())) {
+        for (SQLiteCategory c : newCategories) {
+            try {
+                oracleRepo.insertCategoryFromSQLite(
+                        c.getCategoryName(),
+                        c.getCategoryType(),
+                        c.getDescription(),
+                        Timestamp.valueOf(c.getCreatedAt())
+                );
 
-                    oracleCat.setCategoryType(sqliteCat.getCategoryType());
-                    oracleCat.setDescription(sqliteCat.getDescription());
-                    oracleCat.setCreatedAt(sqliteCat.getCreatedAt());
-                    oracleRepo.save(oracleCat);
-                    System.out.println("🔄 Updated category in Oracle: " + sqliteCat.getCategoryName());
-                }
-            } else {
-                // Insert new category
-                OracleCategory newCat = new OracleCategory();
-                newCat.setCategoryName(sqliteCat.getCategoryName());
-                newCat.setCategoryType(sqliteCat.getCategoryType());
-                newCat.setDescription(sqliteCat.getDescription());
-                newCat.setCreatedAt(sqliteCat.getCreatedAt());
-                oracleRepo.save(newCat);
-                System.out.println("➕ Added new category in Oracle: " + sqliteCat.getCategoryName());
-            }
+                c.setIsSynced(1);
+                c.setSyncStatus("SYNCED");
+                sqliteRepo.save(c);
 
-            // Mark as synced
-            sqliteCat.setIsSynced(true);
-            sqliteRepo.save(sqliteCat);
-        }
-
-        // ✅ 2. Handle Deletions — remove Oracle records missing from SQLite
-        Set<String> sqliteNames = sqliteMap.keySet();
-        for (OracleCategory oracleCat : oracleCategories) {
-            if (!sqliteNames.contains(oracleCat.getCategoryName())) {
-                oracleRepo.delete(oracleCat);
-                System.out.println("❌ Deleted from Oracle (not found in SQLite): " + oracleCat.getCategoryName());
+                System.out.println("✅ [Insert Sync] Synced category ID: " + c.getCategoryId());
+            } catch (Exception e) {
+                System.err.println("❌ [Insert Sync] Failed for Category ID " + c.getCategoryId() + ": " + e.getMessage());
             }
         }
+    }
 
-        System.out.println("✅ Sync completed: Inserts/Updates/Deletes handled.");
+    // --- UPDATE SYNC ---
+    public void syncUpdates() {
+        List<SQLiteCategory> updatedCategories = sqliteRepo.findBySyncStatus("UPDATED");
+
+        for (SQLiteCategory c : updatedCategories) {
+            try {
+                oracleRepo.updateCategoryFromSQLite(
+                        c.getCategoryId(),
+                        c.getCategoryName(),
+                        c.getCategoryType(),
+                        c.getDescription()
+                );
+
+                c.setIsSynced(1);
+                c.setSyncStatus("SYNCED");
+                sqliteRepo.save(c);
+
+                System.out.println("✅ [Update Sync] Synced category ID: " + c.getCategoryId());
+            } catch (Exception e) {
+                System.err.println("❌ [Update Sync] Failed for Category ID " + c.getCategoryId() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    // --- DELETE SYNC ---
+    public void syncDeletes() {
+        List<SQLiteCategory> deletedCategories = sqliteRepo.findBySyncStatus("DELETED");
+
+        for (SQLiteCategory c : deletedCategories) {
+            try {
+                oracleRepo.deleteCategoryFromSQLite(c.getCategoryId());
+
+                // Option 1: Delete from SQLite
+                sqliteRepo.delete(c);
+
+                // Option 2: Keep record but mark as synced
+                // c.setIsSynced(1);
+                // c.setSyncStatus("SYNCED");
+                // sqliteRepo.save(c);
+
+                System.out.println("🗑️ [Delete Sync] Deleted category ID: " + c.getCategoryId());
+            } catch (Exception e) {
+                System.err.println("❌ [Delete Sync] Failed for Category ID " + c.getCategoryId() + ": " + e.getMessage());
+            }
+        }
     }
 }

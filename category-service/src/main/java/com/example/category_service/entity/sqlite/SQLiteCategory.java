@@ -1,7 +1,6 @@
 package com.example.category_service.entity.sqlite;
 
 import javax.persistence.*;
-import org.hibernate.annotations.Type;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,12 +24,15 @@ public class SQLiteCategory {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // ✅ Store as INTEGER (0/1) but handle as Boolean in Java
-    @Type(type = "org.hibernate.type.NumericBooleanType")
     @Column(name = "is_synced", nullable = false)
-    private Boolean isSynced = false;
+    private Integer isSynced = 0; // 0 = Not Synced, 1 = Synced
 
-    // Automatically set createdAt before insert
+    @Column(name = "sync_status", columnDefinition = "TEXT DEFAULT 'NEW'")
+    private String syncStatus = "NEW"; // NEW, UPDATED, DELETED
+
+    @Column(name = "is_deleted", nullable = false)
+    private Integer isDeleted = 0; // 0 = Active, 1 = Deleted
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -79,11 +81,27 @@ public class SQLiteCategory {
         this.createdAt = createdAt;
     }
 
-    public Boolean getIsSynced() {
+    public Integer getIsSynced() {
         return isSynced;
     }
 
-    public void setIsSynced(Boolean isSynced) {
+    public void setIsSynced(Integer isSynced) {
         this.isSynced = isSynced;
+    }
+
+    public String getSyncStatus() {
+        return syncStatus;
+    }
+
+    public void setSyncStatus(String syncStatus) {
+        this.syncStatus = syncStatus;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }
