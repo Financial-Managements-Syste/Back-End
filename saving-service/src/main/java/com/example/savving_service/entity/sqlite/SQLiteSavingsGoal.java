@@ -40,6 +40,12 @@ public class SQLiteSavingsGoal {
     @Column(name = "is_synced")
     private int isSynced = 0;
 
+    @Column(name = "sync_status", columnDefinition = "TEXT DEFAULT 'NEW'")
+    private String syncStatus = "NEW"; // NEW, UPDATED, DELETED
+
+    @Column(name = "is_deleted", nullable = false)
+    private Integer isDeleted = 0; // 0 = Active, 1 = Deleted
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -73,5 +79,19 @@ public class SQLiteSavingsGoal {
     public int getIsSynced() { return isSynced; }
     public void setIsSynced(int isSynced) { this.isSynced = isSynced; }
 
+    public String getSyncStatus() {
+        return syncStatus;
+    }
 
+    public void setSyncStatus(String syncStatus) {
+        this.syncStatus = syncStatus;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
+    }
 }

@@ -9,5 +9,7 @@ import java.util.List;
 @Repository
 public interface SQLiteSavingRepository extends JpaRepository<SQLiteSavingsGoal, Integer> {
     List<SQLiteSavingsGoal> findByUserId(int userId);
-    List findByIsSynced(int isSynced);
+
+    // Sync status queries
+    List<SQLiteSavingsGoal> findBySyncStatus(String syncStatus);
 }
