@@ -25,12 +25,18 @@ CREATE TABLE Categories (
 
 DROP TABLE Categories;
 
-DELETE FROM Categories;
-TRUNCATE TABLE CATEGORIES;
+SELECT uc.constraint_name,
+       uc.constraint_type,
+       ucc.column_name
+FROM user_constraints uc
+JOIN user_cons_columns ucc
+  ON uc.constraint_name = ucc.constraint_name
+WHERE ucc.table_name = 'CATEGORIES';
+
 
 
 DELETE FROM SavingsGoals;
-ALTER TABLE SavingsGoals MODIFY goal_id GENERATED AS IDENTITY (START WITH 1);
+    ALTER TABLE SavingsGoals MODIFY goal_id GENERATED AS IDENTITY (START WITH 1);
 
 
 CREATE TABLE Transactions (
@@ -77,7 +83,7 @@ CREATE TABLE Budgets (
 DROP TABLE Budgets;
 
 CREATE TABLE SavingsGoals (
-    goal_id NUMBER PRIMARY KEY GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    goal_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id NUMBER NOT NULL,
     goal_name VARCHAR2(100) NOT NULL,
     target_amount NUMBER(10,2) NOT NULL,
@@ -171,3 +177,12 @@ INSERT INTO SyncMetadata (user_id, table_name, last_sync_timestamp, records_sync
 VALUES (1, 'Transactions', CURRENT_TIMESTAMP, 1, 'Success');
 
 SELECT COUNT(*) FROM Transactions;
+
+
+SELECT '=== CATEGORIES CHECK ===' as CHECK_TYPE FROM DUAL;
+SELECT 
+    category_id,
+    category_name,
+    category_type
+FROM Categories
+ORDER BY category_type, category_name;
