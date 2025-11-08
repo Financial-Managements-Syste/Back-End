@@ -13,8 +13,8 @@ public class SyncScheduler {
     @Autowired
     private BudgetSyncService syncService;
 
-    // Automatically runs every 30 seconds
-    @Scheduled(fixedRate = 30000)
+    // Automatically runs every 5 seconds
+    @Scheduled(fixedRate = 5000)
     public void scheduleSync() {
         System.out.println("⏳ [Scheduler] Budget sync process started...");
 

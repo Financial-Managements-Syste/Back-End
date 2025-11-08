@@ -14,7 +14,7 @@ public class SyncScheduler {
     private UserSyncService syncService;
 
     // Automatically runs every 30 seconds
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 5000)
     public void scheduleSync() {
         System.out.println("⏳ [Scheduler] User sync process started...");
 
