@@ -30,7 +30,7 @@ public class SavingsGoalSyncService {
         System.out.println("✅ [Sync] SavingsGoal sync completed.");
     }
 
-    // --- INSERT ---
+    // --- INSERT / UPSERT ---
     private void syncInserts() {
         List<SQLiteSavingsGoal> newGoals = sqliteRepo.findBySyncStatus("NEW");
 
@@ -44,7 +44,9 @@ public class SavingsGoalSyncService {
                         ? Timestamp.valueOf(g.getUpdatedAt())
                         : Timestamp.valueOf(LocalDateTime.now());
 
+                // 🆕 Pass goalId to allow MERGE-based UPSERT in Oracle
                 oracleRepo.insertSavingFromSQLite(
+                        (long) g.getGoalId(),
                         (long) g.getUserId(),
                         g.getGoalName(),
                         g.getTargetAmount(),

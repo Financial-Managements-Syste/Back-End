@@ -9,8 +9,10 @@ import com.example.savving_service.entity.oracle.OracleSavingsGoal;
 @Repository
 public interface OracleSavingsGoalRepository extends JpaRepository<OracleSavingsGoal, Long> {
 
+    // Insert the Record
     @Procedure(name = "insertSavingFromSQLite")
     void insertSavingFromSQLite(
+            @Param("p_goal_id") Long goalId,
             @Param("p_user_id") Long userId,
             @Param("p_goal_name") String goalName,
             @Param("p_target_amount") Double targetAmount,
@@ -21,6 +23,7 @@ public interface OracleSavingsGoalRepository extends JpaRepository<OracleSavings
             @Param("p_status") String status
     );
 
+    // Updte and exsisting record
     @Procedure(name = "updateSavingFromSQLite")
     void updateSavingFromSQLite(
             @Param("p_goal_id") Long goalId,
@@ -33,6 +36,7 @@ public interface OracleSavingsGoalRepository extends JpaRepository<OracleSavings
             @Param("p_status") String status
     );
 
+    // Deletes a record in Oracle corresponding to a SQLite record
     @Procedure(name = "deleteSavingFromSQLite")
     void deleteSavingFromSQLite(@Param("p_goal_id") Long goalId);
 }
