@@ -1,8 +1,8 @@
-// ReportController.java
+// ReportController.java - COMPLETE FIXED VERSION
 package com.example.finance_reports_service.controller;
 
 import com.example.finance_reports_service.model.dto.*;
-import com.example.finance_reports_service.service.ReportService;
+import com.example.finance_reports_service.repository.ReportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -13,27 +13,24 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = "*")
 public class ReportController {
 
     @Autowired
-    private ReportService reportService;
+    private ReportRepository reportRepository;
 
     /**
      * REPORT 1: Monthly Expenditure Analysis
-     * GET /api/reports/monthly-expenditure?userId=1&month=10&year=2025
+     * GET /api/reports/monthly-expenditure?userId=1&month=11&year=2025
      */
     @GetMapping("/monthly-expenditure")
     public ResponseEntity<List<MonthlyExpenditureDTO>> getMonthlyExpenditure(
             @RequestParam Long userId,
-            @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam int month,
+            @RequestParam int year) {
 
-        if (month == null) month = LocalDate.now().getMonthValue();
-        if (year == null) year = LocalDate.now().getYear();
-
-        List<MonthlyExpenditureDTO> data = reportService.getMonthlyExpenditure(userId, month, year);
-        return ResponseEntity.ok(data);
+        List<MonthlyExpenditureDTO> result = reportRepository.getMonthlyExpenditure(userId, month, year);
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -44,8 +41,8 @@ public class ReportController {
     public ResponseEntity<List<BudgetAdherenceDTO>> getBudgetAdherence(
             @RequestParam Long userId) {
 
-        List<BudgetAdherenceDTO> data = reportService.getBudgetAdherence(userId);
-        return ResponseEntity.ok(data);
+        List<BudgetAdherenceDTO> result = reportRepository.getBudgetAdherence(userId);
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -56,25 +53,25 @@ public class ReportController {
     public ResponseEntity<List<SavingsProgressDTO>> getSavingsProgress(
             @RequestParam Long userId) {
 
-        List<SavingsProgressDTO> data = reportService.getSavingsProgress(userId);
-        return ResponseEntity.ok(data);
+        List<SavingsProgressDTO> result = reportRepository.getSavingsProgress(userId);
+        return ResponseEntity.ok(result);
     }
 
     /**
-     * REPORT 4: Category-wise Expense Distribution
-     * GET /api/reports/category-distribution?userId=1&startDate=2025-10-01&endDate=2025-10-31
+     * REPORT 4: Category-wise Expense Distribution - FIXED
+     * GET /api/reports/category-distribution?userId=1&startDate=2025-01-01&endDate=2025-11-09&categoryType=Expense
      */
     @GetMapping("/category-distribution")
     public ResponseEntity<List<CategoryDistributionDTO>> getCategoryDistribution(
             @RequestParam Long userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "All") String categoryType) {
 
-        if (startDate == null) startDate = LocalDate.now().withDayOfMonth(1);
-        if (endDate == null) endDate = LocalDate.now();
-
-        List<CategoryDistributionDTO> data = reportService.getCategoryDistribution(userId, startDate, endDate);
-        return ResponseEntity.ok(data);
+        // If dates not provided, use defaults (handled in repository)
+        List<CategoryDistributionDTO> result = reportRepository.getCategoryDistribution(
+                userId, startDate, endDate, categoryType);
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -85,22 +82,27 @@ public class ReportController {
     public ResponseEntity<SavingsForecastDTO> getSavingsForecast(
             @RequestParam Long userId) {
 
-        SavingsForecastDTO data = reportService.getSavingsForecast(userId);
-        return ResponseEntity.ok(data);
+        SavingsForecastDTO result = reportRepository.getSavingsForecast(userId);
+        return ResponseEntity.ok(result);
     }
 
-
+    /**
+     * REPORT 6: Complete Summary Report
+     * GET /api/reports/summary?userId=1
+     */
     @GetMapping("/summary")
-    public ResponseEntity<ReportSummaryDTO> getReportsSummary(@RequestParam Long userId) {
-        ReportSummaryDTO summary = new ReportSummaryDTO();
+    public ResponseEntity<SummaryReportDTO> getSummaryReport(
+            @RequestParam Long userId) {
 
-        LocalDate now = LocalDate.now();
-        summary.setMonthlyExpenditure(reportService.getMonthlyExpenditure(userId, now.getMonthValue(), now.getYear()));
-        summary.setBudgetAdherence(reportService.getBudgetAdherence(userId));
-        summary.setSavingsProgress(reportService.getSavingsProgress(userId));
-        summary.setCategoryDistribution(reportService.getCategoryDistribution(userId, now.withDayOfMonth(1), now));
-        summary.setSavingsForecast(reportService.getSavingsForecast(userId));
+        SummaryReportDTO result = reportRepository.getSummaryReport(userId);
+        return ResponseEntity.ok(result);
+    }
 
-        return ResponseEntity.ok(summary);
+    /**
+     * Health check endpoint
+     */
+    @GetMapping("/health")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("Reports Service is running");
     }
 }
