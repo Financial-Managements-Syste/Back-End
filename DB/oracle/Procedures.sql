@@ -240,6 +240,7 @@ END delete_transaction_from_sqlite;
 
 -- Insert procedure
 CREATE OR REPLACE PROCEDURE insertSavingFromSQLite(
+    p_goal_id IN NUMBER,
     p_user_id IN NUMBER,
     p_goal_name IN VARCHAR2,
     p_target_amount IN NUMBER,
@@ -250,13 +251,31 @@ CREATE OR REPLACE PROCEDURE insertSavingFromSQLite(
     p_status IN VARCHAR2
 ) AS
 BEGIN
-    INSERT INTO SavingsGoals (
-        user_id, goal_name, target_amount, current_amount, target_date, created_at, updated_at, status
-    ) VALUES (
-        p_user_id, p_goal_name, p_target_amount, p_current_amount, p_target_date, p_created_at, p_updated_at, p_status
-    );
+    MERGE INTO SavingsGoals t
+    USING (SELECT p_goal_id AS goal_id FROM dual) s
+    ON (t.goal_id = s.goal_id)
+    WHEN MATCHED THEN
+        UPDATE SET
+            t.user_id = p_user_id,
+            t.goal_name = p_goal_name,
+            t.target_amount = p_target_amount,
+            t.current_amount = p_current_amount,
+            t.target_date = p_target_date,
+            t.updated_at = p_updated_at,
+            t.status = p_status
+    WHEN NOT MATCHED THEN
+        INSERT (
+            goal_id, user_id, goal_name, target_amount, current_amount, target_date,
+            created_at, updated_at, status
+        )
+        VALUES (
+            p_goal_id, p_user_id, p_goal_name, p_target_amount, p_current_amount,
+            p_target_date, p_created_at, p_updated_at, p_status
+        );
 END;
 /
+
+
 
 -- Update procedure
 CREATE OR REPLACE PROCEDURE updateSavingFromSQLite(

@@ -26,15 +26,6 @@ CREATE TABLE Categories (
 
 DROP TABLE Categories;
 
-SELECT uc.constraint_name,
-       uc.constraint_type,
-       ucc.column_name
-FROM user_constraints uc
-JOIN user_cons_columns ucc
-  ON uc.constraint_name = ucc.constraint_name
-WHERE ucc.table_name = 'CATEGORIES';
-
-
 
 DELETE FROM SavingsGoals;
     ALTER TABLE SavingsGoals MODIFY goal_id GENERATED AS IDENTITY (START WITH 1);
@@ -84,7 +75,7 @@ CREATE TABLE Budgets (
 DROP TABLE Budgets;
 
 CREATE TABLE SavingsGoals (
-    goal_id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    goal_id NUMBER PRIMARY KEY,  
     user_id NUMBER NOT NULL,
     goal_name VARCHAR2(100) NOT NULL,
     target_amount NUMBER(10,2) NOT NULL,
@@ -100,8 +91,7 @@ CREATE TABLE SavingsGoals (
 );
 
 
-DROP TABLE SavingsGoals;
-CASCADE CONSTRAINTS;
+DROP TABLE SavingsGoals CASCADE CONSTRAINTS;
 
 
 
@@ -174,16 +164,6 @@ INSERT INTO Transactions
 VALUES (1, 1, 5000.00, 'Income', TO_DATE('2025-10-01', 'YYYY-MM-DD'), 'October Salary', 'Bank Transfer')
 
 
-INSERT INTO SyncMetadata (user_id, table_name, last_sync_timestamp, records_synced, sync_status)
-VALUES (1, 'Transactions', CURRENT_TIMESTAMP, 1, 'Success');
-
 SELECT COUNT(*) FROM Transactions;
 
-
-SELECT '=== CATEGORIES CHECK ===' as CHECK_TYPE FROM DUAL;
-SELECT 
-    category_id,
-    category_name,
-    category_type
-FROM Categories
-ORDER BY category_type, category_name;
+SELECT COUNT(*) FROM Categories;
